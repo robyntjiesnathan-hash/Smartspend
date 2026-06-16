@@ -4,7 +4,7 @@ import { Transaction } from '../types';
 import { getTransactions, saveTransactions } from '../storage';
 
 export type AppScreen = 'splash' | 'paywall' | 'app';
-export type AppTab = 'home' | 'budgets' | 'progress' | 'profile' | 'add' | 'weekly';
+export type AppTab = 'home' | 'budgets' | 'progress' | 'profile' | 'add' | 'weekly' | 'transactions';
 
 export type Challenge = {
   title: string; desc: string; days: number; done: number;
@@ -58,6 +58,7 @@ type AppContextType = {
   toggles: boolean[];
   setToggles: (fn: (t: boolean[]) => boolean[]) => void;
   transactions: Transaction[];
+  deleteTransaction: (id: string) => void;
   doAdd: () => void;
   go: (t: AppTab) => void;
 };
@@ -162,6 +163,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }, 2400);
   }, [xp, addAmt, addLabel, addType, addCat]);
 
+  const deleteTransaction = useCallback((id: string) => {
+    setTransactions(prev => prev.filter(t => t.id !== id));
+  }, []);
+
   const markChallenge = useCallback((idx: number) => {
     setChallenges(prev => prev.map((ch, i) => {
       if (i !== idx) return ch;
@@ -195,7 +200,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       theme, setTheme, acc, setAcc, tipIdx, setTipIdx,
       rewardTab, setRewardTab, profTab, setProfTab,
       challenges, markChallenge, toggles, setToggles,
-      transactions,
+      transactions, deleteTransaction,
       doAdd, go,
     }}>
       {children}

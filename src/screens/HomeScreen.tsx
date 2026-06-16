@@ -181,7 +181,12 @@ export function HomeScreen() {
         })}
 
         {/* Recent transactions */}
-        <Text style={[s.sectionLabel, { marginTop: 14, marginBottom: 10 }]}>RECENT TRANSACTIONS</Text>
+        <View style={[s.sectionHeader, { marginTop: 14, marginBottom: 10 }]}>
+          <Text style={s.sectionLabel}>RECENT TRANSACTIONS</Text>
+          <TouchableOpacity style={s.weeklyBtn} onPress={() => go('transactions')}>
+            <Text style={s.weeklyTxt}>View all</Text>
+          </TouchableOpacity>
+        </View>
         <View style={s.txnCard}>
           {transactions.length === 0 ? (
             <View style={{ padding: 20, alignItems: 'center' }}>

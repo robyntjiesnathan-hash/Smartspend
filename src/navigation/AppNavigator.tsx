@@ -6,6 +6,7 @@ import { AddScreen } from '../screens/AddScreen';
 import { ProgressScreen } from '../screens/ProgressScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { WeeklyScreen } from '../screens/WeeklyScreen';
+import { TransactionsScreen } from '../screens/TransactionsScreen';
 import { useApp, AppTab } from '../context/AppContext';
 import { THEMES, P } from '../data/constants';
 
@@ -54,15 +55,16 @@ function TabBtn({ t, active, th, locked }: {
 }
 
 const SCREENS: Record<AppTab, React.ReactNode> = {
-  home:     <HomeScreen />,
-  budgets:  <BudgetsScreen />,
-  add:      <AddScreen />,
-  progress: <ProgressScreen />,
-  profile:  <ProfileScreen />,
-  weekly:   <WeeklyScreen />,
+  home:         <HomeScreen />,
+  budgets:      <BudgetsScreen />,
+  add:          <AddScreen />,
+  progress:     <ProgressScreen />,
+  profile:      <ProfileScreen />,
+  weekly:       <WeeklyScreen />,
+  transactions: <TransactionsScreen />,
 };
 
-const HIDE_NAV: AppTab[] = ['add', 'weekly'];
+const HIDE_NAV: AppTab[] = ['add', 'weekly', 'transactions'];
 
 export function AppNavigator() {
   const { tab } = useApp();
