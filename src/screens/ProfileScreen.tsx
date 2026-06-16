@@ -1,8 +1,16 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Sprout } from '../components/Sprout';
 import { useApp } from '../context/AppContext';
 import { THEMES, ACCESSORIES, P, getLvl } from '../data/constants';
+import {
+  requestNotifPermission,
+  scheduleDailyReminder,
+  scheduleWeeklySummary,
+  scheduleStreakAlert,
+  scheduleMascotTip,
+  cancelNotif,
+} from '../utils/notifications';
 
 export function ProfileScreen() {
   const {
@@ -10,6 +18,35 @@ export function ProfileScreen() {
     rewardTab, setRewardTab, profTab, setProfTab,
     toggles, setToggles, setScreen,
   } = useApp();
+  const [notifIds, setNotifIds] = useState<(string | null)[]>([null, null, null, null]);
+
+  const NOTIF_SCHEDULERS = [
+    scheduleDailyReminder,
+    scheduleWeeklySummary,
+    scheduleStreakAlert,
+    scheduleMascotTip,
+  ];
+
+  const handleToggle = async (idx: number) => {
+    const enabling = !toggles[idx];
+    if (enabling) {
+      const granted = await requestNotifPermission();
+      if (!granted) {
+        Alert.alert(
+          'Notifications blocked',
+          'Enable notifications in your device Settings to use this feature.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      const id = await NOTIF_SCHEDULERS[idx]();
+      setNotifIds(prev => { const n = [...prev]; n[idx] = id; return n; });
+    } else {
+      if (notifIds[idx]) await cancelNotif(notifIds[idx]!);
+      setNotifIds(prev => { const n = [...prev]; n[idx] = null; return n; });
+    }
+    setToggles(t => { const n = [...t]; n[idx] = enabling; return n; });
+  };
   const { c } = getLvl(xp);
 
   return (
@@ -119,7 +156,7 @@ export function ProfileScreen() {
                 </View>
                 <TouchableOpacity
                   style={[s.toggle, { backgroundColor: toggles[idx] ? P.green : '#CBD5CB' }]}
-                  onPress={() => setToggles(t => { const n = [...t]; n[idx] = !n[idx]; return n; })}>
+                  onPress={() => handleToggle(idx)}>
                   <View style={[s.toggleThumb, { left: toggles[idx] ? 20 : 2 }]} />
                 </TouchableOpacity>
               </View>

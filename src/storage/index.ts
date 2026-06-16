@@ -3,6 +3,27 @@ import { Transaction, Budget } from '../types';
 
 const TRANSACTIONS_KEY = '@smartspend_transactions';
 const BUDGETS_KEY = '@smartspend_budgets';
+const SETTINGS_KEY = '@smartspend_settings';
+
+export type SavedSettings = {
+  isPro: boolean;
+  toggles: boolean[];
+  theme: string;
+  acc: string;
+};
+
+export const getSettings = async (): Promise<Partial<SavedSettings>> => {
+  try {
+    const data = await AsyncStorage.getItem(SETTINGS_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const saveSettings = async (settings: SavedSettings): Promise<void> => {
+  await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+};
 
 export const getTransactions = async (): Promise<Transaction[]> => {
   try {

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { INIT_CHALLENGES, getLvl } from '../data/constants';
 import { Transaction } from '../types';
-import { getTransactions, saveTransactions } from '../storage';
+import { getTransactions, saveTransactions, getSettings, saveSettings } from '../storage';
 
 export type AppScreen = 'splash' | 'paywall' | 'app';
 export type AppTab = 'home' | 'budgets' | 'progress' | 'profile' | 'add' | 'weekly' | 'transactions';
@@ -112,13 +112,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    getTransactions().then(saved => {
+    Promise.all([getTransactions(), getSettings()]).then(([saved, settings]) => {
+      // Restore settings
+      if (settings.isPro !== undefined) setIsPro(settings.isPro);
+      if (settings.toggles)            setToggles(settings.toggles);
+      if (settings.theme)              setTheme(settings.theme);
+      if (settings.acc)                setAcc(settings.acc);
+
+      // Route returning vs new user
       if (saved.length > 0) {
         setTransactions(saved);
-        setScreen('app');   // returning user — skip splash & paywall
+        setScreen('app');
       } else {
         setTransactions(SEED_TXNS);
-        // new user stays on 'splash' → they press Get started → paywall
       }
       setIsReady(true);
     });
@@ -129,6 +135,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       saveTransactions(transactions).catch(() => {});
     }
   }, [transactions]);
+
+  useEffect(() => {
+    if (!isReady) return;
+    saveSettings({ isPro, toggles, theme, acc }).catch(() => {});
+  }, [isPro, toggles, theme, acc, isReady]);
 
   const PRO_TABS: AppTab[] = ['progress', 'profile', 'weekly'];
 
