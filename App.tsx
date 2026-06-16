@@ -85,8 +85,18 @@ function ChallengeModal() {
   );
 }
 
+function LoadingScreen() {
+  return (
+    <View style={{ flex: 1, backgroundColor: P.green, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: 40, marginBottom: 12 }}>🌱</Text>
+      <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }}>SmartSpend</Text>
+    </View>
+  );
+}
+
 function Root() {
-  const { screen } = useApp();
+  const { isReady, screen } = useApp();
+  if (!isReady) return <LoadingScreen />;
   if (screen === 'splash') return <SplashScreen />;
   if (screen === 'paywall') return <PaywallScreen />;
   return (

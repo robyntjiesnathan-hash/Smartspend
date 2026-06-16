@@ -12,6 +12,7 @@ export type Challenge = {
 };
 
 type AppContextType = {
+  isReady: boolean;
   screen: AppScreen;
   setScreen: (s: AppScreen) => void;
   tab: AppTab;
@@ -108,10 +109,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [challenges, setChallenges] = useState<Challenge[]>(INIT_CHALLENGES);
   const [toggles, setToggles] = useState([true, true, true, true]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     getTransactions().then(saved => {
-      setTransactions(saved.length > 0 ? saved : SEED_TXNS);
+      if (saved.length > 0) {
+        setTransactions(saved);
+        setScreen('app');   // returning user — skip splash & paywall
+      } else {
+        setTransactions(SEED_TXNS);
+        // new user stays on 'splash' → they press Get started → paywall
+      }
+      setIsReady(true);
     });
   }, []);
 
@@ -192,7 +201,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AppContext.Provider value={{
-      screen, setScreen, tab, setTab, isPro, activatePro, plan, setPlan,
+      isReady, screen, setScreen, tab, setTab, isPro, activatePro, plan, setPlan,
       xp, streak, mood, setMood, msg, setMsg, confetti, setConfetti,
       levelUp, setLevelUp, chModal, setChModal,
       addType, setAddType, addAmt, setAddAmt, addLabel, setAddLabel,
