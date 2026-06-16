@@ -1,27 +1,65 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView,
+  ActivityIndicator, Alert,
 } from 'react-native';
 import { Sprout } from '../components/Sprout';
 import { useApp } from '../context/AppContext';
 import { PRO_FEATURES, FREE_VS_PRO, P } from '../data/constants';
+import { activatePurchase, restorePurchases } from '../utils/purchases';
 
 export function PaywallScreen() {
   const { setScreen, setTab, activatePro, plan, setPlan } = useApp();
+  const [loading, setLoading] = useState<'buy' | 'restore' | null>(null);
 
-  const priceLabel = plan === 'yearly' ? '$4.99' : '$11.99';
-  const totalLabel = plan === 'yearly' ? 'Billed $59.99/yr' : 'Billed monthly';
-  const trialLabel = plan === 'yearly'
+  const priceLabel  = plan === 'yearly' ? '$4.99' : '$11.99';
+  const totalLabel  = plan === 'yearly' ? 'Billed $59.99/yr' : 'Billed monthly';
+  const trialLabel  = plan === 'yearly'
     ? 'Cancel anytime · 7-day free trial included'
     : 'Cancel anytime · No contracts';
-  const badgeLabel = plan === 'yearly' ? 'Best value — save 58%' : null;
-  const ctaLabel = plan === 'yearly' ? 'Start free trial →' : 'Subscribe now →';
+  const badgeLabel  = plan === 'yearly' ? 'Best value — save 58%' : null;
+  const ctaLabel    = plan === 'yearly' ? 'Start free trial' : 'Subscribe now';
+
+  const handleBuy = async () => {
+    setLoading('buy');
+    try {
+      const result = await activatePurchase(plan);
+      if (result.ok) {
+        activatePro();
+      } else if (!result.cancelled) {
+        Alert.alert('Purchase failed', result.message);
+      }
+    } catch {
+      Alert.alert('Something went wrong', 'Please check your connection and try again.');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleRestore = async () => {
+    setLoading('restore');
+    try {
+      const result = await restorePurchases();
+      if (result.ok) {
+        activatePro();
+        Alert.alert('Purchase restored!', 'Welcome back to Pro 🎉');
+      } else {
+        Alert.alert('No purchase found', result.message);
+      }
+    } catch {
+      Alert.alert('Something went wrong', 'Please check your connection and try again.');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const isBusy = loading !== null;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: P.bg, maxWidth: 390, alignSelf: 'center', width: '100%' }}>
-      {/* Header gradient */}
+      {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => setScreen('splash')}>
+        <TouchableOpacity style={s.backBtn} onPress={() => setScreen('splash')} disabled={isBusy}>
           <Text style={s.backTxt}>← Back</Text>
         </TouchableOpacity>
         <View style={s.headerRow}>
@@ -38,16 +76,17 @@ export function PaywallScreen() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={s.body}>
         {/* Plan toggle */}
         <View style={s.toggle}>
-          <TouchableOpacity
-            style={[s.toggleBtn, plan === 'yearly' && s.toggleBtnActive]}
-            onPress={() => setPlan('yearly')}>
-            <Text style={[s.toggleTxt, plan === 'yearly' && s.toggleTxtActive]}>Yearly</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[s.toggleBtn, plan === 'monthly' && s.toggleBtnActive]}
-            onPress={() => setPlan('monthly')}>
-            <Text style={[s.toggleTxt, plan === 'monthly' && s.toggleTxtActive]}>Monthly</Text>
-          </TouchableOpacity>
+          {(['yearly', 'monthly'] as const).map(p => (
+            <TouchableOpacity
+              key={p}
+              style={[s.toggleBtn, plan === p && s.toggleBtnActive]}
+              onPress={() => setPlan(p)}
+              disabled={isBusy}>
+              <Text style={[s.toggleTxt, plan === p && s.toggleTxtActive]}>
+                {p === 'yearly' ? 'Yearly' : 'Monthly'}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* Pricing card */}
@@ -66,12 +105,32 @@ export function PaywallScreen() {
         <Text style={s.trial}>{trialLabel}</Text>
 
         {/* CTA */}
-        <TouchableOpacity style={s.cta} onPress={activatePro} activeOpacity={0.85}>
-          <Text style={s.ctaTxt}>{ctaLabel}</Text>
+        <TouchableOpacity
+          style={[s.cta, isBusy && { opacity: 0.7 }]}
+          onPress={handleBuy}
+          activeOpacity={0.85}
+          disabled={isBusy}>
+          {loading === 'buy' ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={s.ctaTxt}>{ctaLabel} →</Text>
+          )}
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => { setScreen('app'); setTab('home'); }}>
-          <Text style={s.freeTxt}>Continue with Free plan</Text>
-        </TouchableOpacity>
+
+        {/* Restore + skip */}
+        <View style={s.belowCtaRow}>
+          <TouchableOpacity onPress={handleRestore} disabled={isBusy}>
+            {loading === 'restore' ? (
+              <ActivityIndicator color={P.muted} size="small" />
+            ) : (
+              <Text style={s.restoreTxt}>Restore purchase</Text>
+            )}
+          </TouchableOpacity>
+          <Text style={s.dot}>·</Text>
+          <TouchableOpacity onPress={() => { setScreen('app'); setTab('home'); }} disabled={isBusy}>
+            <Text style={s.freeTxt}>Continue free</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Pro features */}
         <Text style={s.sectionLabel}>WHAT YOU GET WITH PRO</Text>
@@ -102,17 +161,23 @@ export function PaywallScreen() {
           ))}
         </View>
 
-        {/* Trust */}
+        {/* Trust badges */}
         <View style={s.trustRow}>
-          {[{ icon: '🔒', label: 'Bank-level\nsecurity' }, { icon: '🚫', label: 'No ads\never' }, { icon: '↩️', label: 'Cancel\nanytime' }].map(t => (
+          {[
+            { icon: '🔒', label: 'Bank-level\nsecurity' },
+            { icon: '🚫', label: 'No ads\never' },
+            { icon: '↩️', label: 'Cancel\nanytime' },
+          ].map(t => (
             <View key={t.label} style={s.trustCard}>
               <Text style={{ fontSize: 20, marginBottom: 4 }}>{t.icon}</Text>
               <Text style={s.trustLabel}>{t.label}</Text>
             </View>
           ))}
         </View>
+
         <Text style={s.legal}>
-          Payment processed securely. By subscribing you agree to our Terms of Service.
+          Payment processed securely by Apple / Google. By subscribing you agree to our
+          Terms of Service and Privacy Policy. Subscription auto-renews unless cancelled.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -120,10 +185,7 @@ export function PaywallScreen() {
 }
 
 const s = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20,
-    backgroundColor: '#1B6E3A',
-  },
+  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, backgroundColor: '#1B6E3A' },
   backBtn: {
     backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 99,
     paddingHorizontal: 14, paddingVertical: 6, alignSelf: 'flex-start', marginBottom: 16,
@@ -142,17 +204,16 @@ const s = StyleSheet.create({
     padding: 4, marginBottom: 16,
   },
   toggleBtn: { flex: 1, borderRadius: 11, paddingVertical: 10, alignItems: 'center' },
-  toggleBtnActive: { backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.09, shadowRadius: 4, elevation: 3 },
+  toggleBtnActive: {
+    backgroundColor: '#fff',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.09, shadowRadius: 4, elevation: 3,
+  },
   toggleTxt: { fontSize: 13, fontWeight: '800', color: '#6B8F6B' },
   toggleTxtActive: { color: '#1B6E3A' },
-  priceCard: {
-    borderRadius: 22, padding: 20, marginBottom: 6,
-    backgroundColor: '#1B6E3A',
-  },
+  priceCard: { borderRadius: 22, padding: 20, marginBottom: 6, backgroundColor: '#1B6E3A' },
   saveBadge: {
     backgroundColor: '#C6F135', borderRadius: 99,
-    paddingHorizontal: 12, paddingVertical: 4,
-    alignSelf: 'flex-start', marginBottom: 10,
+    paddingHorizontal: 12, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 10,
   },
   saveTxt: { fontSize: 11, fontWeight: '900', color: '#145229' },
   price: { color: '#fff', fontSize: 42, fontWeight: '900', lineHeight: 44 },
@@ -161,11 +222,17 @@ const s = StyleSheet.create({
   trial: { textAlign: 'center', color: '#6B8F6B', fontSize: 11, fontWeight: '700', marginBottom: 16 },
   cta: {
     backgroundColor: '#111C11', borderRadius: 18, paddingVertical: 17,
-    alignItems: 'center', marginBottom: 10,
+    alignItems: 'center', marginBottom: 12, minHeight: 56, justifyContent: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.22, shadowRadius: 10, elevation: 6,
   },
   ctaTxt: { color: '#fff', fontSize: 16, fontWeight: '900' },
-  freeTxt: { textAlign: 'center', color: '#6B8F6B', fontSize: 12, fontWeight: '700', marginBottom: 24 },
+  belowCtaRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, marginBottom: 28,
+  },
+  restoreTxt: { color: '#6B8F6B', fontSize: 12, fontWeight: '700' },
+  dot: { color: '#6B8F6B', fontSize: 12 },
+  freeTxt: { color: '#6B8F6B', fontSize: 12, fontWeight: '700' },
   sectionLabel: {
     fontSize: 11, fontWeight: '800', color: '#6B8F6B',
     letterSpacing: 0.6, marginBottom: 12, textTransform: 'uppercase',
@@ -189,11 +256,11 @@ const s = StyleSheet.create({
   tableRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F2FAF4' },
   tableFeat: { flex: 1, fontWeight: '700', fontSize: 13, color: '#111C11' },
   tableNote: { fontSize: 11, fontWeight: '700' },
-  trustRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  trustRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
   trustCard: {
     flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 12, alignItems: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
   },
   trustLabel: { fontSize: 10, fontWeight: '800', color: '#6B8F6B', textAlign: 'center', lineHeight: 14 },
-  legal: { textAlign: 'center', color: '#6B8F6B', fontSize: 10, fontWeight: '600', lineHeight: 15 },
+  legal: { textAlign: 'center', color: '#9EB99E', fontSize: 10, fontWeight: '600', lineHeight: 15 },
 });
