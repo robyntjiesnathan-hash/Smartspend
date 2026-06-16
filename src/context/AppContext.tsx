@@ -1,81 +1,156 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Transaction, Budget } from '../types';
-import { getTransactions, saveTransactions, getBudgets, saveBudgets } from '../storage';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { INIT_CHALLENGES, getLvl } from '../data/constants';
 
-const SEED_TRANSACTIONS: Transaction[] = [
-  { id: '1', type: 'income', amount: 3500, category: 'Salary', note: 'Monthly salary', date: new Date(Date.now() - 25 * 86400000).toISOString() },
-  { id: '2', type: 'expense', amount: 120, category: 'Food', note: 'Grocery shopping', date: new Date(Date.now() - 3 * 86400000).toISOString() },
-  { id: '3', type: 'expense', amount: 45, category: 'Transport', note: 'Uber rides', date: new Date(Date.now() - 2 * 86400000).toISOString() },
-  { id: '4', type: 'expense', amount: 200, category: 'Shopping', note: 'Clothing', date: new Date(Date.now() - 5 * 86400000).toISOString() },
-  { id: '5', type: 'expense', amount: 80, category: 'Bills', note: 'Electricity bill', date: new Date(Date.now() - 7 * 86400000).toISOString() },
-  { id: '6', type: 'expense', amount: 35, category: 'Entertainment', note: 'Netflix + Spotify', date: new Date(Date.now() - 1 * 86400000).toISOString() },
-  { id: '7', type: 'income', amount: 250, category: 'Other', note: 'Freelance work', date: new Date(Date.now() - 10 * 86400000).toISOString() },
-  { id: '8', type: 'expense', amount: 60, category: 'Health', note: 'Pharmacy', date: new Date(Date.now() - 4 * 86400000).toISOString() },
-];
+export type AppScreen = 'splash' | 'paywall' | 'app';
+export type AppTab = 'home' | 'budgets' | 'progress' | 'profile' | 'add' | 'weekly';
 
-const SEED_BUDGETS: Budget[] = [
-  { category: 'Food', limit: 400 },
-  { category: 'Transport', limit: 150 },
-  { category: 'Shopping', limit: 300 },
-  { category: 'Bills', limit: 200 },
-  { category: 'Entertainment', limit: 100 },
-  { category: 'Health', limit: 150 },
-];
+export type Challenge = {
+  title: string; desc: string; days: number; done: number;
+  xp: number; col: string; colL: string; colD: string;
+};
 
 type AppContextType = {
-  transactions: Transaction[];
-  budgets: Budget[];
-  addTransaction: (t: Transaction) => Promise<void>;
-  deleteTransaction: (id: string) => Promise<void>;
-  setBudget: (budget: Budget) => Promise<void>;
+  screen: AppScreen;
+  setScreen: (s: AppScreen) => void;
+  tab: AppTab;
+  setTab: (t: AppTab) => void;
+  isPro: boolean;
+  activatePro: () => void;
+  plan: 'yearly' | 'monthly';
+  setPlan: (p: 'yearly' | 'monthly') => void;
+  xp: number;
+  streak: number;
+  mood: 'happy' | 'excited' | 'sad';
+  setMood: (m: 'happy' | 'excited' | 'sad') => void;
+  msg: string;
+  setMsg: (m: string) => void;
+  confetti: boolean;
+  setConfetti: (v: boolean) => void;
+  levelUp: { lvl: number; name: string } | null;
+  setLevelUp: (v: { lvl: number; name: string } | null) => void;
+  chModal: Challenge | null;
+  setChModal: (v: Challenge | null) => void;
+  addType: 'expense' | 'income';
+  setAddType: (t: 'expense' | 'income') => void;
+  addAmt: string;
+  setAddAmt: (v: string) => void;
+  addLabel: string;
+  setAddLabel: (v: string) => void;
+  addCat: string;
+  setAddCat: (v: string) => void;
+  addDone: boolean;
+  selBudget: string | null;
+  setSelBudget: (v: string | null) => void;
+  theme: string;
+  setTheme: (v: string) => void;
+  acc: string;
+  setAcc: (v: string) => void;
+  tipIdx: number;
+  setTipIdx: (fn: (i: number) => number) => void;
+  rewardTab: 'themes' | 'accessories';
+  setRewardTab: (v: 'themes' | 'accessories') => void;
+  profTab: 'rewards' | 'settings';
+  setProfTab: (v: 'rewards' | 'settings') => void;
+  challenges: Challenge[];
+  markChallenge: (idx: number) => void;
+  toggles: boolean[];
+  setToggles: (fn: (t: boolean[]) => boolean[]) => void;
+  doAdd: () => void;
+  go: (t: AppTab) => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [screen, setScreen] = useState<AppScreen>('splash');
+  const [tab, setTab] = useState<AppTab>('home');
+  const [isPro, setIsPro] = useState(false);
+  const [plan, setPlan] = useState<'yearly' | 'monthly'>('yearly');
+  const [xp, setXp] = useState(720);
+  const [streak, setStreak] = useState(14);
+  const [mood, setMood] = useState<'happy' | 'excited' | 'sad'>('happy');
+  const [msg, setMsg] = useState('Every dollar tracked grows your money tree! 🌱');
+  const [confetti, setConfetti] = useState(false);
+  const [levelUp, setLevelUp] = useState<{ lvl: number; name: string } | null>(null);
+  const [chModal, setChModal] = useState<Challenge | null>(null);
+  const [addType, setAddType] = useState<'expense' | 'income'>('expense');
+  const [addAmt, setAddAmt] = useState('');
+  const [addLabel, setAddLabel] = useState('');
+  const [addCat, setAddCat] = useState('Groceries');
+  const [addDone, setAddDone] = useState(false);
+  const [selBudget, setSelBudget] = useState<string | null>(null);
+  const [theme, setTheme] = useState('forest');
+  const [acc, setAcc] = useState('hat');
+  const [tipIdx, setTipIdx] = useState(0);
+  const [rewardTab, setRewardTab] = useState<'themes' | 'accessories'>('themes');
+  const [profTab, setProfTab] = useState<'rewards' | 'settings'>('rewards');
+  const [challenges, setChallenges] = useState<Challenge[]>(INIT_CHALLENGES);
+  const [toggles, setToggles] = useState([true, true, true, true]);
 
-  useEffect(() => {
-    const load = async () => {
-      let txns = await getTransactions();
-      let bdgts = await getBudgets();
-      if (txns.length === 0) {
-        txns = SEED_TRANSACTIONS;
-        await saveTransactions(txns);
+  const PRO_TABS: AppTab[] = ['progress', 'profile', 'weekly'];
+
+  const go = useCallback((t: AppTab) => {
+    if (!isPro && PRO_TABS.includes(t)) { setScreen('paywall'); return; }
+    setTab(t); setScreen('app');
+  }, [isPro]);
+
+  const doAdd = useCallback(() => {
+    if (!addAmt || !addLabel) return;
+    const prev = xp, next = prev + 25;
+    const wasL = getLvl(prev).c.lvl;
+    const nowC = getLvl(next).c;
+    setXp(next);
+    setStreak(s => Math.min(s + 1, 99));
+    setMood('excited');
+    if (nowC.lvl > wasL) {
+      setLevelUp(nowC);
+      setConfetti(true);
+      setMsg('Level up! You\'re becoming a financial pro! 🏆');
+      setTimeout(() => setConfetti(false), 2600);
+    } else {
+      setMsg('Every dollar tracked grows your money tree! 🌱');
+    }
+    setAddDone(true);
+    setTimeout(() => {
+      setAddDone(false); setAddAmt(''); setAddLabel(''); setMood('happy');
+    }, 2400);
+  }, [xp, addAmt, addLabel]);
+
+  const markChallenge = useCallback((idx: number) => {
+    setChallenges(prev => prev.map((ch, i) => {
+      if (i !== idx) return ch;
+      const done = Math.min(ch.days, ch.done + 1);
+      if (done === ch.days) {
+        setChModal(ch);
+        setXp(x => x + ch.xp);
+        setConfetti(true);
+        setTimeout(() => setConfetti(false), 2800);
       }
-      if (bdgts.length === 0) {
-        bdgts = SEED_BUDGETS;
-        await saveBudgets(bdgts);
-      }
-      setTransactions(txns);
-      setBudgets(bdgts);
-    };
-    load();
+      return { ...ch, done };
+    }));
   }, []);
 
-  const addTransaction = async (t: Transaction) => {
-    const updated = [t, ...transactions];
-    setTransactions(updated);
-    await saveTransactions(updated);
-  };
-
-  const deleteTransaction = async (id: string) => {
-    const updated = transactions.filter(t => t.id !== id);
-    setTransactions(updated);
-    await saveTransactions(updated);
-  };
-
-  const setBudget = async (budget: Budget) => {
-    const updated = budgets.some(b => b.category === budget.category)
-      ? budgets.map(b => b.category === budget.category ? budget : b)
-      : [...budgets, budget];
-    setBudgets(updated);
-    await saveBudgets(updated);
-  };
+  const activatePro = useCallback(() => {
+    setIsPro(true);
+    setScreen('app');
+    setTab('home');
+    setMsg('Welcome to Pro! Every feature is now unlocked 🚀');
+    setMood('excited');
+    setTimeout(() => setMood('happy'), 3000);
+  }, []);
 
   return (
-    <AppContext.Provider value={{ transactions, budgets, addTransaction, deleteTransaction, setBudget }}>
+    <AppContext.Provider value={{
+      screen, setScreen, tab, setTab, isPro, activatePro, plan, setPlan,
+      xp, streak, mood, setMood, msg, setMsg, confetti, setConfetti,
+      levelUp, setLevelUp, chModal, setChModal,
+      addType, setAddType, addAmt, setAddAmt, addLabel, setAddLabel,
+      addCat, setAddCat, addDone, selBudget, setSelBudget,
+      theme, setTheme, acc, setAcc, tipIdx, setTipIdx,
+      rewardTab, setRewardTab, profTab, setProfTab,
+      challenges, markChallenge, toggles, setToggles,
+      doAdd, go,
+    }}>
       {children}
     </AppContext.Provider>
   );
