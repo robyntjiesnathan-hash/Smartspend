@@ -42,13 +42,26 @@ export const ACCESSORIES = [
 ];
 
 export const LEVELS = [
-  { lvl: 1,  name: 'Money Beginner',   xp: 0 },
-  { lvl: 2,  name: 'Budget Starter',   xp: 150 },
-  { lvl: 3,  name: 'Expense Tracker',  xp: 350 },
-  { lvl: 4,  name: 'Smart Saver',      xp: 600 },
-  { lvl: 5,  name: 'Budget Builder',   xp: 900 },
-  { lvl: 10, name: 'Financial Planner',xp: 2500 },
-  { lvl: 20, name: 'Money Master',     xp: 8000 },
+  { lvl: 1,  name: 'Money Beginner',    xp: 0 },
+  { lvl: 2,  name: 'Budget Starter',    xp: 150 },
+  { lvl: 3,  name: 'Expense Tracker',   xp: 350 },
+  { lvl: 4,  name: 'Smart Saver',       xp: 600 },
+  { lvl: 5,  name: 'Budget Builder',    xp: 900 },
+  { lvl: 6,  name: 'Frugal Fox',        xp: 1200 },
+  { lvl: 7,  name: 'Thrift Champion',   xp: 1600 },
+  { lvl: 8,  name: 'Nest Egg Ninja',    xp: 2000 },
+  { lvl: 9,  name: 'Savings Sage',      xp: 2200 },
+  { lvl: 10, name: 'Financial Planner', xp: 2500 },
+  { lvl: 11, name: 'Wealth Scout',      xp: 3000 },
+  { lvl: 12, name: 'Dollar Dynamo',     xp: 3600 },
+  { lvl: 13, name: 'Budget Wizard',     xp: 4200 },
+  { lvl: 14, name: 'Penny Powerhouse',  xp: 4900 },
+  { lvl: 15, name: 'Prosperity Pro',    xp: 5700 },
+  { lvl: 16, name: 'Capital Crafter',   xp: 6500 },
+  { lvl: 17, name: 'Wealth Strategist', xp: 7000 },
+  { lvl: 18, name: 'Finance Guru',      xp: 7400 },
+  { lvl: 19, name: 'Money Mentor',      xp: 7700 },
+  { lvl: 20, name: 'Money Master',      xp: 8000 },
 ];
 
 export const TIPS = [

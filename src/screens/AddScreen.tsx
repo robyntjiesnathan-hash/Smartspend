@@ -11,7 +11,7 @@ const CATS = ['Groceries', 'Transport', 'Entertainment', 'Dining Out', 'Health',
 export function AddScreen() {
   const {
     addType, setAddType, addAmt, setAddAmt, addLabel, setAddLabel,
-    addCat, setAddCat, addDone, streak, theme, doAdd,
+    addCat, setAddCat, addDone, streak, theme, doAdd, go,
   } = useApp();
   const th = THEMES.find(t => t.id === theme) || THEMES[0];
 
@@ -32,6 +32,11 @@ export function AddScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={{ flex: 1, backgroundColor: P.bg }} showsVerticalScrollIndicator={false}>
         <View style={[s.header, { backgroundColor: th.primary }]}>
+          <View style={s.headerNav}>
+            <TouchableOpacity style={s.backBtn} onPress={() => go('home')}>
+              <Text style={s.backBtnTxt}>← Back</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={s.headerSub}>Every dollar earns +25 XP</Text>
           <Text style={s.headerTitle}>Log transaction</Text>
           <View style={s.typeToggle}>
@@ -113,6 +118,9 @@ const s = StyleSheet.create({
   doneSub: { color: 'rgba(255,255,255,0.8)', fontSize: 16, fontWeight: '700', marginBottom: 20 },
   streakBadge: { borderRadius: 16, paddingHorizontal: 20, paddingVertical: 12 },
   streakTxt: { fontSize: 14, fontWeight: '800' },
+  headerNav: { marginBottom: 12 },
+  backBtn: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 13, paddingVertical: 7, alignSelf: 'flex-start' },
+  backBtnTxt: { color: '#fff', fontSize: 12, fontWeight: '800' },
   header: { padding: 24, paddingBottom: 20 },
   headerSub: { color: 'rgba(255,255,255,0.65)', fontSize: 12, fontWeight: '700', marginBottom: 2 },
   headerTitle: { color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: -1, marginBottom: 18 },

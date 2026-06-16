@@ -5,14 +5,34 @@ import {
 import { Sprout } from '../components/Sprout';
 import { Ring } from '../components/Ring';
 import { useApp } from '../context/AppContext';
-import { QUESTS, TXNS, TIPS, THEMES, P, getLvl, fmt, pct } from '../data/constants';
+import { QUESTS, TIPS, THEMES, P, getLvl, fmt, pct } from '../data/constants';
 
 export function HomeScreen() {
-  const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go } = useApp();
+  const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go, transactions } = useApp();
   const th = THEMES.find(t => t.id === theme) || THEMES[0];
   const { c, p: lvlPct, inn, inn2 } = getLvl(xp);
   const tip = TIPS[tipIdx % TIPS.length];
   const health = 82;
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  const balance = transactions.reduce((sum, t) => t.type === 'income' ? sum + t.amount : sum - t.amount, 0);
+  const balanceFmt = (balance < 0 ? '-' : '') + fmt(Math.abs(balance));
+
+  const CAT_ICON: Record<string, string> = {
+    Groceries: '🛒', Transport: '🚗', Entertainment: '🎬',
+    'Dining Out': '🍽️', Health: '❤️', Shopping: '🛍️',
+    Bills: '📄', Other: '📝', Income: '💰',
+  };
+
+  const fmtDate = (d: string) => {
+    const today2 = new Date().toISOString().split('T')[0];
+    const yest = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    if (d === today2) return 'Today';
+    if (d === yest) return 'Yesterday';
+    return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
 
   const today = new Date();
   const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -41,7 +61,7 @@ export function HomeScreen() {
       <View style={[s.header, { backgroundColor: th.primary }]}>
         <View style={s.headerTop}>
           <View>
-            <Text style={s.headerSub}>Good morning</Text>
+            <Text style={s.headerSub}>{greeting}</Text>
             <Text style={s.headerTitle}>SmartSpend</Text>
           </View>
           <View style={{ alignItems: 'flex-end', gap: 5 }}>
@@ -69,7 +89,7 @@ export function HomeScreen() {
 
         {/* Stats */}
         <View style={s.statsRow}>
-          {[{ l: 'Balance', v: '$4,610' }, { l: 'Streak', v: `🔥 ${streak}d` }, { l: 'Health', v: `${health}/100` }].map(stat => (
+          {[{ l: 'Balance', v: balanceFmt }, { l: 'Streak', v: `🔥 ${streak}d` }, { l: 'Health', v: `${health}/100` }].map(stat => (
             <View key={stat.l} style={s.statBox}>
               <Text style={s.statLabel}>{stat.l}</Text>
               <Text style={s.statVal}>{stat.v}</Text>
@@ -163,17 +183,23 @@ export function HomeScreen() {
         {/* Recent transactions */}
         <Text style={[s.sectionLabel, { marginTop: 14, marginBottom: 10 }]}>RECENT TRANSACTIONS</Text>
         <View style={s.txnCard}>
-          {TXNS.slice(0, 5).map((tx, i) => (
-            <View key={tx.label} style={[s.txnRow, i < 4 && s.txnBorder]}>
-              <View style={[s.txnIcon, { backgroundColor: tx.amount > 0 ? '#DCF5E7' : '#F5F5F5' }]}>
-                <Text style={{ fontSize: 16 }}>{tx.icon}</Text>
+          {transactions.length === 0 ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ fontSize: 32, marginBottom: 8 }}>📝</Text>
+              <Text style={{ color: P.muted, fontSize: 13, fontWeight: '700' }}>No transactions yet</Text>
+              <Text style={{ color: P.muted, fontSize: 11, marginTop: 3 }}>Tap Log to add your first one</Text>
+            </View>
+          ) : transactions.slice(0, 5).map((tx, i) => (
+            <View key={tx.id} style={[s.txnRow, i < Math.min(4, transactions.length - 1) && s.txnBorder]}>
+              <View style={[s.txnIcon, { backgroundColor: tx.type === 'income' ? '#DCF5E7' : '#F5F5F5' }]}>
+                <Text style={{ fontSize: 16 }}>{CAT_ICON[tx.category] || '📝'}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.txnLabel} numberOfLines={1}>{tx.label}</Text>
-                <Text style={s.txnSub}>{tx.cat} · {tx.date}</Text>
+                <Text style={s.txnLabel} numberOfLines={1}>{tx.note}</Text>
+                <Text style={s.txnSub}>{tx.category} · {fmtDate(tx.date)}</Text>
               </View>
-              <Text style={[s.txnAmt, { color: tx.amount > 0 ? P.greenDeep : P.dark }]}>
-                {tx.amount > 0 ? '+' : ''}{fmt(tx.amount)}
+              <Text style={[s.txnAmt, { color: tx.type === 'income' ? P.greenDeep : P.dark }]}>
+                {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
               </Text>
             </View>
           ))}

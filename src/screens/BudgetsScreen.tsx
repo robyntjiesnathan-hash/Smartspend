@@ -5,18 +5,31 @@ import { useApp } from '../context/AppContext';
 import { BUDGETS_DATA, THEMES, P, fmt, pct } from '../data/constants';
 
 export function BudgetsScreen() {
-  const { theme, selBudget, setSelBudget } = useApp();
+  const { theme, selBudget, setSelBudget, transactions } = useApp();
   const th = THEMES.find(t => t.id === theme) || THEMES[0];
 
-  const tot = BUDGETS_DATA.reduce((a, b) => a + b.spent, 0);
-  const lim = BUDGETS_DATA.reduce((a, b) => a + b.limit, 0);
+  const now = new Date();
+  const dateLabel = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  const spend: Record<string, number> = {};
+  transactions.forEach(t => {
+    if (t.type !== 'expense') return;
+    const d = new Date(t.date + 'T00:00:00');
+    if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+      spend[t.category] = (spend[t.category] || 0) + t.amount;
+    }
+  });
+
+  const budgets = BUDGETS_DATA.map(b => ({ ...b, spent: spend[b.cat] || 0 }));
+  const tot = budgets.reduce((a, b) => a + b.spent, 0);
+  const lim = budgets.reduce((a, b) => a + b.limit, 0);
   const ov = pct(tot, lim);
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: P.bg }} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={[s.header, { backgroundColor: th.primary }]}>
-        <Text style={s.headerSub}>June 2025</Text>
+        <Text style={s.headerSub}>{dateLabel}</Text>
         <Text style={s.headerTitle}>Budget overview</Text>
         <View style={s.ringWrap}>
           <Ring pct={ov} sz={108} sw={10} col="rgba(255,255,255,0.95)" bg="rgba(255,255,255,0.2)">
@@ -40,7 +53,7 @@ export function BudgetsScreen() {
 
       <View style={{ padding: 16, paddingBottom: 32 }}>
         <Text style={s.sectionLabel}>CATEGORIES</Text>
-        {BUDGETS_DATA.map(b => {
+        {budgets.map(b => {
           const pc = pct(b.spent, b.limit);
           const over = b.spent > b.limit;
           const sel = selBudget === b.cat;
