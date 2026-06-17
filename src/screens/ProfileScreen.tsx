@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert,
-  Platform, Modal, Linking, SafeAreaView,
+  Platform, Modal, Linking, SafeAreaView, TextInput,
 } from 'react-native';
 import { Sprout } from '../components/Sprout';
 import { useApp } from '../context/AppContext';
@@ -95,10 +95,12 @@ export function ProfileScreen() {
   const {
     xp, streak, isPro, mood, acc, setAcc, theme, setTheme,
     rewardTab, setRewardTab, profTab, setProfTab,
-    toggles, setToggles, setScreen,
+    toggles, setToggles, setScreen, userProfile, signOutUser, updateDisplayName,
   } = useApp();
   const [notifIds, setNotifIds] = useState<(string | null)[]>([null, null, null, null]);
   const [legalModal, setLegalModal] = useState<null | 'tos' | 'privacy'>(null);
+  const [editName, setEditName] = useState(false);
+  const [nameInput, setNameInput] = useState(userProfile?.displayName || '');
 
   const NOTIF_SCHEDULERS = [
     scheduleDailyReminder,
@@ -144,7 +146,37 @@ export function ProfileScreen() {
         <View style={{ alignItems: 'center', marginBottom: 8 }}>
           <Sprout lvl={c.lvl} size={110} mood={mood} acc={acc} />
         </View>
-        <Text style={s.name}>Your Account</Text>
+        {editName ? (
+          <View style={s.editNameRow}>
+            <TextInput
+              style={s.nameInput}
+              value={nameInput}
+              onChangeText={setNameInput}
+              placeholder="Your name"
+              placeholderTextColor="rgba(255,255,255,0.4)"
+              autoFocus
+              onSubmitEditing={() => {
+                if (nameInput.trim()) updateDisplayName(nameInput.trim());
+                setEditName(false);
+              }}
+            />
+            <TouchableOpacity
+              style={s.nameSaveBtn}
+              onPress={() => {
+                if (nameInput.trim()) updateDisplayName(nameInput.trim());
+                setEditName(false);
+              }}>
+              <Text style={s.nameSaveTxt}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={() => { setNameInput(userProfile?.displayName || ''); setEditName(true); }}>
+            <Text style={s.name}>{userProfile?.displayName || 'Your Account'} ✏️</Text>
+          </TouchableOpacity>
+        )}
+        {userProfile?.email ? (
+          <Text style={s.email}>{userProfile.email}</Text>
+        ) : null}
         <Text style={s.sub}>Level {c.lvl} · {c.name} · {xp} XP</Text>
         <View style={s.badgeRow}>
           <View style={s.badge}><Text style={s.badgeTxt}>🔥 {streak}-day streak</Text></View>
@@ -257,6 +289,17 @@ export function ProfileScreen() {
               </TouchableOpacity>
             )}
 
+            {userProfile && (
+              <TouchableOpacity
+                style={s.signOutBtn}
+                onPress={() => Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Sign out', style: 'destructive', onPress: signOutUser },
+                ])}>
+                <Text style={s.signOutTxt}>Sign out</Text>
+              </TouchableOpacity>
+            )}
+
             <Text style={[s.sectionLabel, { marginTop: 16 }]}>ABOUT</Text>
             {[
               {
@@ -324,8 +367,21 @@ export function ProfileScreen() {
 
 const s = StyleSheet.create({
   header: { padding: 20, paddingTop: 24, alignItems: 'center' },
-  name: { color: '#fff', fontSize: 22, fontWeight: '900', marginBottom: 4 },
+  name: { color: '#fff', fontSize: 22, fontWeight: '900', marginBottom: 2, textAlign: 'center' },
+  email: { color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: '600', marginBottom: 4 },
+  editNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  nameInput: {
+    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8,
+    color: '#fff', fontSize: 18, fontWeight: '700', minWidth: 140,
+  },
+  nameSaveBtn: { backgroundColor: '#C6F135', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  nameSaveTxt: { color: '#145229', fontSize: 13, fontWeight: '900' },
   sub: { color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: '700', marginBottom: 12 },
+  signOutBtn: {
+    backgroundColor: '#FEF2F2', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 8,
+    borderWidth: 1, borderColor: '#FECACA',
+  },
+  signOutTxt: { color: '#EF4444', fontSize: 14, fontWeight: '800' },
   badgeRow: { flexDirection: 'row', gap: 10 },
   badge: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 },
   proBadge: { backgroundColor: '#C6F135' },

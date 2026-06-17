@@ -14,6 +14,23 @@ export type Budget = {
   limit: number;
 };
 
+export type SavingsGoal = {
+  id: string;
+  title: string;
+  emoji: string;
+  targetAmount: number;
+  savedAmount: number;
+  color: string;
+  colorLight: string;
+  colorDark: string;
+};
+
+export type UserProfile = {
+  id: string;
+  email: string;
+  displayName: string;
+};
+
 export type AppState = {
   transactions: Transaction[];
   budgets: Budget[];

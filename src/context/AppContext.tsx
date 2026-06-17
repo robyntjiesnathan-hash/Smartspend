@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
 import { INIT_CHALLENGES, getLvl } from '../data/constants';
-import { Transaction } from '../types';
-import { getTransactions, saveTransactions, getSettings, saveSettings } from '../storage';
+import { Transaction, SavingsGoal, UserProfile } from '../types';
+import { getTransactions, saveTransactions, getSettings, saveSettings, getSavingsGoals, saveSavingsGoals, getUserProfile, saveUserProfile } from '../storage';
+import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 
-export type AppScreen = 'splash' | 'paywall' | 'app';
-export type AppTab = 'home' | 'budgets' | 'progress' | 'profile' | 'add' | 'weekly' | 'transactions';
+export type AppScreen = 'splash' | 'auth' | 'paywall' | 'app';
+export type AppTab = 'home' | 'budgets' | 'progress' | 'profile' | 'add' | 'weekly' | 'transactions' | 'savings';
 
 export type Challenge = {
   title: string; desc: string; days: number; done: number;
@@ -66,6 +67,17 @@ type AppContextType = {
   deleteTransaction: (id: string) => void;
   doAdd: () => void;
   go: (t: AppTab) => void;
+  // Auth
+  userProfile: UserProfile | null;
+  signInUser: (email: string, password: string) => Promise<string | null>;
+  signUpUser: (email: string, password: string, displayName: string) => Promise<string | null>;
+  signOutUser: () => Promise<void>;
+  updateDisplayName: (name: string) => Promise<void>;
+  // Savings goals
+  savingsGoals: SavingsGoal[];
+  addSavingsGoal: (goal: Omit<SavingsGoal, 'id'>) => void;
+  deleteSavingsGoal: (id: string) => void;
+  updateSavingsGoalAmount: (id: string, addAmount: number) => void;
 };
 
 const PRO_TABS: AppTab[] = ['progress', 'profile', 'weekly'];
@@ -96,8 +108,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [tab, setTab] = useState<AppTab>('home');
   const [isPro, setIsPro] = useState(false);
   const [plan, setPlan] = useState<'yearly' | 'monthly'>('yearly');
-  const [xp, setXp] = useState(720);
-  const [streak, setStreak] = useState(14);
+  const [xp, setXp] = useState(0);
+  const [streak, setStreak] = useState(0);
   const [mood, setMood] = useState<'happy' | 'excited' | 'sad'>('happy');
   const [msg, setMsg] = useState('Every dollar tracked grows your money tree! 🌱');
   const [confetti, setConfetti] = useState(false);
@@ -117,34 +129,215 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [challenges, setChallenges] = useState<Challenge[]>(INIT_CHALLENGES);
   const [toggles, setToggles] = useState([true, true, true, true]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isReady, setIsReady] = useState(false);
   const confettiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const addDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Boot: restore local state + check Supabase session ────────────────────
   useEffect(() => {
-    Promise.all([getTransactions(), getSettings()]).then(([saved, settings]) => {
-      // Restore settings
+    Promise.all([
+      getTransactions(),
+      getSettings(),
+      getSavingsGoals(),
+      getUserProfile(),
+    ]).then(([saved, settings, goals, profile]) => {
       if (settings.isPro !== undefined) setIsPro(settings.isPro);
       if (settings.toggles)            setToggles(settings.toggles);
       if (settings.theme)              setTheme(settings.theme);
       if (settings.acc)                setAcc(settings.acc);
+      if (settings.xp !== undefined)   setXp(settings.xp);
+      if (settings.streak !== undefined) setStreak(settings.streak);
 
-      // Route returning vs new user
-      if (saved.length > 0) {
+      if (goals.length > 0) setSavingsGoals(goals);
+
+      if (profile) {
+        setUserProfile(profile);
+        setScreen('app');
+      } else if (saved.length > 0) {
         setTransactions(saved);
         setScreen('app');
       } else {
         setTransactions(SEED_TXNS);
+        setXp(720);
+        setStreak(14);
       }
+
       setIsReady(true);
     });
+
+    // Check Supabase session on startup
+    if (isSupabaseConfigured) {
+      const sb = getSupabase();
+      if (sb) {
+        sb.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) {
+            setUserProfile({
+              id: session.user.id,
+              email: session.user.email ?? '',
+              displayName: session.user.user_metadata?.display_name
+                || session.user.email?.split('@')[0]
+                || 'User',
+            });
+            loadSupabaseData(session.user.id);
+          }
+        });
+
+        const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+          if (session?.user) {
+            setUserProfile({
+              id: session.user.id,
+              email: session.user.email ?? '',
+              displayName: session.user.user_metadata?.display_name
+                || session.user.email?.split('@')[0]
+                || 'User',
+            });
+          } else {
+            setUserProfile(null);
+          }
+        });
+        return () => subscription.unsubscribe();
+      }
+    }
   }, []);
 
+  const loadSupabaseData = async (userId: string) => {
+    const sb = getSupabase();
+    if (!sb) return;
+
+    const [txnRes, profileRes, goalsRes] = await Promise.all([
+      sb.from('transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+      sb.from('profiles').select('*').eq('id', userId).single(),
+      sb.from('savings_goals').select('*').eq('user_id', userId),
+    ]);
+
+    if (txnRes.data?.length) {
+      const txns: Transaction[] = txnRes.data.map((r: any) => ({
+        id: r.id,
+        type: r.type,
+        amount: parseFloat(r.amount),
+        category: r.category,
+        note: r.note,
+        date: r.date,
+      }));
+      setTransactions(txns);
+      saveTransactions(txns).catch(() => {});
+    }
+
+    if (profileRes.data) {
+      const p = profileRes.data;
+      if (p.xp !== undefined)    setXp(p.xp);
+      if (p.streak !== undefined) setStreak(p.streak);
+      if (p.is_pro !== undefined) setIsPro(p.is_pro);
+      if (p.theme)               setTheme(p.theme);
+      if (p.acc)                 setAcc(p.acc);
+    }
+
+    if (goalsRes.data?.length) {
+      const goals: SavingsGoal[] = goalsRes.data.map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        emoji: r.emoji,
+        targetAmount: parseFloat(r.target_amount),
+        savedAmount: parseFloat(r.saved_amount),
+        color: r.color,
+        colorLight: r.color_light,
+        colorDark: r.color_dark,
+      }));
+      setSavingsGoals(goals);
+      saveSavingsGoals(goals).catch(() => {});
+    }
+
+    setScreen('app');
+  };
+
+  // ── Persist settings locally ───────────────────────────────────────────────
   useEffect(() => {
     if (!isReady) return;
-    saveSettings({ isPro, toggles, theme, acc }).catch(() => {});
-  }, [isPro, toggles, theme, acc, isReady]);
+    saveSettings({ isPro, toggles, theme, acc, xp, streak }).catch(() => {});
+  }, [isPro, toggles, theme, acc, xp, streak, isReady]);
 
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  const signInUser = useCallback(async (email: string, password: string): Promise<string | null> => {
+    const sb = getSupabase();
+    if (!sb) {
+      // Offline mode: accept any credentials, store locally
+      const profile: UserProfile = { id: 'local', email, displayName: email.split('@')[0] };
+      setUserProfile(profile);
+      await saveUserProfile(profile);
+      return null;
+    }
+    const { error, data } = await sb.auth.signInWithPassword({ email, password });
+    if (error) return error.message;
+    if (data.user) {
+      const profile: UserProfile = {
+        id: data.user.id,
+        email: data.user.email ?? '',
+        displayName: data.user.user_metadata?.display_name || email.split('@')[0],
+      };
+      setUserProfile(profile);
+      await saveUserProfile(profile);
+      await loadSupabaseData(data.user.id);
+    }
+    return null;
+  }, []);
+
+  const signUpUser = useCallback(async (email: string, password: string, displayName: string): Promise<string | null> => {
+    const sb = getSupabase();
+    if (!sb) {
+      const profile: UserProfile = { id: 'local', email, displayName };
+      setUserProfile(profile);
+      await saveUserProfile(profile);
+      setXp(0);
+      setStreak(0);
+      setTransactions([]);
+      return null;
+    }
+    const { error, data } = await sb.auth.signUp({
+      email,
+      password,
+      options: { data: { display_name: displayName } },
+    });
+    if (error) return error.message;
+    if (data.user) {
+      const profile: UserProfile = { id: data.user.id, email: data.user.email ?? '', displayName };
+      setUserProfile(profile);
+      await saveUserProfile(profile);
+      setXp(0);
+      setStreak(0);
+      setTransactions([]);
+    }
+    return null;
+  }, []);
+
+  const signOutUser = useCallback(async () => {
+    const sb = getSupabase();
+    if (sb) await sb.auth.signOut();
+    setUserProfile(null);
+    await saveUserProfile(null);
+    setTransactions(SEED_TXNS);
+    setXp(720);
+    setStreak(14);
+    setSavingsGoals([]);
+    setScreen('splash');
+    setOnboardingStep(0);
+  }, []);
+
+  const updateDisplayName = useCallback(async (name: string) => {
+    setUserProfile(prev => prev ? { ...prev, displayName: name } : null);
+    const sb = getSupabase();
+    if (sb) {
+      await sb.auth.updateUser({ data: { display_name: name } });
+      if (userProfile?.id) {
+        await sb.from('profiles').update({ display_name: name }).eq('id', userProfile.id);
+      }
+    }
+    const current = await getUserProfile();
+    if (current) await saveUserProfile({ ...current, displayName: name });
+  }, [userProfile]);
+
+  // ── Navigation ────────────────────────────────────────────────────────────
   const navToPaywall = useCallback(() => {
     setPrevScreen(screen);
     setScreen('paywall');
@@ -159,6 +352,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setTab(t); setScreen('app');
   }, [isPro, screen]);
 
+  // ── Transactions ──────────────────────────────────────────────────────────
   const doAdd = useCallback(() => {
     if (!addAmt || !addLabel) return;
     const amount = parseFloat(addAmt);
@@ -172,18 +366,41 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       note: addLabel,
       date: new Date().toISOString().split('T')[0],
     };
+
     setTransactions(prev => {
       const next = [newTxn, ...prev];
       saveTransactions(next).catch(() => {});
       return next;
     });
 
+    // Sync to Supabase
+    if (isSupabaseConfigured && userProfile?.id && userProfile.id !== 'local') {
+      const sb = getSupabase();
+      sb?.from('transactions').insert({
+        user_id: userProfile.id,
+        type: newTxn.type,
+        amount: newTxn.amount,
+        category: newTxn.category,
+        note: newTxn.note,
+        date: newTxn.date,
+      }).then(({ error }) => { if (error) console.warn('Supabase insert failed', error.message); });
+    }
+
     const prev_xp = xp, next_xp = prev_xp + 25;
     const wasL = getLvl(prev_xp).c.lvl;
     const nowC = getLvl(next_xp).c;
+    const newStreak = streak + 1;
     setXp(next_xp);
-    setStreak(s => Math.min(s + 1, 99));
+    setStreak(s => Math.min(s + 1, 999));
     setMood('excited');
+
+    // Sync XP & streak to Supabase
+    if (isSupabaseConfigured && userProfile?.id && userProfile.id !== 'local') {
+      const sb = getSupabase();
+      sb?.from('profiles').update({ xp: next_xp, streak: newStreak, last_logged: new Date().toISOString().split('T')[0] })
+        .eq('id', userProfile.id).then(() => {});
+    }
+
     if (nowC.lvl > wasL) {
       setLevelUp(nowC);
       setConfetti(true);
@@ -198,7 +415,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     addDoneTimerRef.current = setTimeout(() => {
       setAddDone(false); setAddAmt(''); setAddLabel(''); setMood('happy');
     }, 2400);
-  }, [xp, addAmt, addLabel, addType, addCat]);
+  }, [xp, streak, addAmt, addLabel, addType, addCat, userProfile]);
 
   const deleteTransaction = useCallback((id: string) => {
     setTransactions(prev => {
@@ -206,8 +423,64 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       saveTransactions(next).catch(() => {});
       return next;
     });
-  }, []);
+    if (isSupabaseConfigured && userProfile?.id && userProfile.id !== 'local') {
+      const sb = getSupabase();
+      sb?.from('transactions').delete().eq('id', id).then(() => {});
+    }
+  }, [userProfile]);
 
+  // ── Savings goals ─────────────────────────────────────────────────────────
+  const addSavingsGoal = useCallback((goal: Omit<SavingsGoal, 'id'>) => {
+    const newGoal: SavingsGoal = { ...goal, id: Date.now().toString() };
+    setSavingsGoals(prev => {
+      const next = [...prev, newGoal];
+      saveSavingsGoals(next).catch(() => {});
+      return next;
+    });
+    if (isSupabaseConfigured && userProfile?.id && userProfile.id !== 'local') {
+      const sb = getSupabase();
+      sb?.from('savings_goals').insert({
+        user_id: userProfile.id,
+        title: goal.title,
+        emoji: goal.emoji,
+        target_amount: goal.targetAmount,
+        saved_amount: goal.savedAmount,
+        color: goal.color,
+        color_light: goal.colorLight,
+        color_dark: goal.colorDark,
+      }).then(() => {});
+    }
+  }, [userProfile]);
+
+  const deleteSavingsGoal = useCallback((id: string) => {
+    setSavingsGoals(prev => {
+      const next = prev.filter(g => g.id !== id);
+      saveSavingsGoals(next).catch(() => {});
+      return next;
+    });
+    if (isSupabaseConfigured && userProfile?.id && userProfile.id !== 'local') {
+      const sb = getSupabase();
+      sb?.from('savings_goals').delete().eq('id', id).then(() => {});
+    }
+  }, [userProfile]);
+
+  const updateSavingsGoalAmount = useCallback((id: string, addAmount: number) => {
+    setSavingsGoals(prev => {
+      const next = prev.map(g => {
+        if (g.id !== id) return g;
+        const updated = { ...g, savedAmount: Math.min(g.savedAmount + addAmount, g.targetAmount) };
+        if (isSupabaseConfigured && userProfile?.id && userProfile.id !== 'local') {
+          const sb = getSupabase();
+          sb?.from('savings_goals').update({ saved_amount: updated.savedAmount }).eq('id', id).then(() => {});
+        }
+        return updated;
+      });
+      saveSavingsGoals(next).catch(() => {});
+      return next;
+    });
+  }, [userProfile]);
+
+  // ── Challenges ────────────────────────────────────────────────────────────
   const markChallenge = useCallback((idx: number) => {
     setChallenges(prev => prev.map((ch, i) => {
       if (i !== idx) return ch;
@@ -230,7 +503,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setMsg('Welcome to Pro! Every feature is now unlocked 🚀');
     setMood('excited');
     setTimeout(() => setMood('happy'), 3000);
-  }, []);
+    if (isSupabaseConfigured && userProfile?.id && userProfile.id !== 'local') {
+      const sb = getSupabase();
+      sb?.from('profiles').update({ is_pro: true }).eq('id', userProfile.id).then(() => {});
+    }
+  }, [userProfile]);
 
   return (
     <AppContext.Provider value={{
@@ -244,6 +521,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       challenges, markChallenge, toggles, setToggles,
       transactions, deleteTransaction,
       doAdd, go,
+      userProfile, signInUser, signUpUser, signOutUser, updateDisplayName,
+      savingsGoals, addSavingsGoal, deleteSavingsGoal, updateSavingsGoalAmount,
     }}>
       {children}
     </AppContext.Provider>

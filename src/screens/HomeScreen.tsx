@@ -8,7 +8,7 @@ import { useApp } from '../context/AppContext';
 import { QUESTS, TIPS, THEMES, P, getLvl, fmt, pct, CAT_ICON, fmtDate } from '../data/constants';
 
 export function HomeScreen() {
-  const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go, transactions } = useApp();
+  const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go, transactions, userProfile, savingsGoals } = useApp();
   const th = useMemo(() => THEMES.find(t => t.id === theme) || THEMES[0], [theme]);
   const { c, p: lvlPct, inn, inn2 } = useMemo(() => getLvl(xp), [xp]);
   const tip = TIPS[tipIdx % TIPS.length];
@@ -54,7 +54,7 @@ export function HomeScreen() {
       <View style={[s.header, { backgroundColor: th.primary }]}>
         <View style={s.headerTop}>
           <View>
-            <Text style={s.headerSub}>{greeting}</Text>
+            <Text style={s.headerSub}>{greeting}{userProfile ? `, ${userProfile.displayName.split(' ')[0]}` : ''}</Text>
             <Text style={s.headerTitle}>SmartSpend</Text>
           </View>
           <View style={{ alignItems: 'flex-end', gap: 5 }}>
@@ -138,6 +138,8 @@ export function HomeScreen() {
               onPress={() => {
                 if (q.a === 'rewards') { go('profile'); return; }
                 if (q.a === 'gopro') { setScreen('paywall'); return; }
+                if (q.a === 'goal') { go('savings'); return; }
+                if (q.a === 'income') { go('add'); return; }
                 go('add');
               }}>
               <Text style={{ fontSize: 24, marginBottom: 8 }}>{q.icon}</Text>
@@ -147,27 +149,38 @@ export function HomeScreen() {
           ))}
         </View>
 
-        {/* Quests */}
-        <Text style={[s.sectionLabel, { marginBottom: 10, marginTop: 6 }]}>ACTIVE QUESTS</Text>
-        {QUESTS.map(q => {
-          const pc = pct(q.saved, q.target);
+        {/* Savings Goals */}
+        <View style={[s.sectionHeader, { marginTop: 6 }]}>
+          <Text style={s.sectionLabel}>SAVINGS GOALS</Text>
+          <TouchableOpacity style={s.weeklyBtn} onPress={() => go('savings')}>
+            <Text style={s.weeklyTxt}>{savingsGoals.length ? 'View all' : 'Add goal'}</Text>
+          </TouchableOpacity>
+        </View>
+        {savingsGoals.length === 0 ? (
+          <TouchableOpacity style={s.emptyGoals} onPress={() => go('savings')} activeOpacity={0.8}>
+            <Text style={{ fontSize: 24, marginBottom: 6 }}>🎯</Text>
+            <Text style={s.emptyGoalsTxt}>Create your first savings goal</Text>
+          </TouchableOpacity>
+        ) : savingsGoals.slice(0, 3).map(q => {
+          const pc = pct(q.savedAmount, q.targetAmount);
           return (
             <View key={q.id} style={s.questCard}>
-              <Ring pct={pc} sz={50} sw={5} col={q.col} bg={q.colL}>
+              <Ring pct={pc} sz={50} sw={5} col={q.color} bg={q.colorLight}>
                 <Text style={{ fontSize: 16 }}>{q.emoji}</Text>
               </Ring>
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <View style={s.questTitleRow}>
                   <Text style={s.questTitle}>{q.title}</Text>
-                  <View style={[s.badge, { backgroundColor: q.colL }]}>
-                    <Text style={[s.badgeTxt, { color: q.colD }]}>{pc}%</Text>
+                  <View style={[s.badge, { backgroundColor: q.colorLight }]}>
+                    <Text style={[s.badgeTxt, { color: q.colorDark }]}>{pc}%</Text>
                   </View>
                 </View>
-                <Text style={s.questAmt}>{fmt(q.saved)} / {fmt(q.target)}</Text>
+                <Text style={s.questAmt}>{fmt(q.savedAmount)} / {fmt(q.targetAmount)}</Text>
                 <View style={s.progressBg}>
-                  <View style={[s.progressFill, { width: `${pc}%`, backgroundColor: q.col }]} />
+                  <View style={[s.progressFill, { width: `${pc}%`, backgroundColor: q.color }]} />
                 </View>
-                {pc >= 70 && <Text style={[s.questAlmost, { color: q.col }]}>{pc}% done — almost there!</Text>}
+                {pc >= 70 && pc < 100 && <Text style={[s.questAlmost, { color: q.color }]}>{pc}% done — almost there!</Text>}
+                {pc >= 100 && <Text style={[s.questAlmost, { color: q.color }]}>🎉 Goal reached!</Text>}
               </View>
             </View>
           );
@@ -264,6 +277,12 @@ const s = StyleSheet.create({
   progressBg: { height: 5, backgroundColor: '#E8F0E8', borderRadius: 99, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 99 },
   questAlmost: { fontSize: 10, fontWeight: '800', marginTop: 3 },
+  emptyGoals: {
+    backgroundColor: '#fff', borderRadius: 18, padding: 20,
+    alignItems: 'center', marginBottom: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
+  },
+  emptyGoalsTxt: { color: P.muted, fontSize: 13, fontWeight: '700' },
   txnCard: {
     backgroundColor: '#fff', borderRadius: 20, overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,

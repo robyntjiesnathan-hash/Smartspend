@@ -7,6 +7,7 @@ import { ProgressScreen } from '../screens/ProgressScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { WeeklyScreen } from '../screens/WeeklyScreen';
 import { TransactionsScreen } from '../screens/TransactionsScreen';
+import { SavingsScreen } from '../screens/SavingsScreen';
 import { useApp, AppTab } from '../context/AppContext';
 import { THEMES, P } from '../data/constants';
 
@@ -62,9 +63,10 @@ const SCREENS: Record<AppTab, React.ReactNode> = {
   profile:      <ProfileScreen />,
   weekly:       <WeeklyScreen />,
   transactions: <TransactionsScreen />,
+  savings:      <SavingsScreen />,
 };
 
-const HIDE_NAV: AppTab[] = ['add', 'weekly', 'transactions'];
+const HIDE_NAV: AppTab[] = ['add', 'weekly', 'transactions', 'savings'];
 
 export function AppNavigator() {
   const { tab } = useApp();

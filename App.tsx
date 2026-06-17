@@ -7,6 +7,7 @@ import { AppProvider, useApp } from './src/context/AppContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { PaywallScreen } from './src/screens/PaywallScreen';
+import { AuthScreen } from './src/screens/AuthScreen';
 import { P } from './src/data/constants';
 
 function Confetti() {
@@ -98,6 +99,7 @@ function Root() {
   const { isReady, screen } = useApp();
   if (!isReady) return <LoadingScreen />;
   if (screen === 'splash') return <SplashScreen />;
+  if (screen === 'auth') return <AuthScreen />;
   if (screen === 'paywall') return <PaywallScreen />;
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: P.bg, alignItems: 'center' }}>

@@ -14,8 +14,8 @@ const FEATURES = [
 export function SplashScreen() {
   const { setScreen, setTab, setPlan, navToPaywall, onboardingStep: step, setOnboardingStep: setStep } = useApp();
 
-  const goFree = () => { setStep(0); setScreen('app'); setTab('home'); };
-  const goPro  = () => { setPlan('yearly'); navToPaywall(); };
+  const goFree = () => { setScreen('auth'); };
+  const goPro  = () => { setPlan('yearly'); setScreen('auth'); };
 
   return (
     <SafeAreaView style={s.safe}>
@@ -109,7 +109,7 @@ export function SplashScreen() {
 
         {/* ── Skip / account link (hidden on plan chooser) ── */}
         {step < 2 && (
-          <TouchableOpacity style={s.skipWrap} onPress={goFree}>
+          <TouchableOpacity style={s.skipWrap} onPress={() => setScreen('auth')}>
             <Text style={s.skipTxt}>
               {step === 0 ? 'I already have an account' : 'Skip for now'}
             </Text>
