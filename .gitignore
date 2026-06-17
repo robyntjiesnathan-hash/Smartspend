@@ -4,3 +4,10 @@ dist/
 .claude/
 *.log
 .DS_Store
+
+# Store credentials — never commit these
+google-play-key.json
+*.p8
+*.p12
+*.mobileprovision
+AuthKey_*.p8
