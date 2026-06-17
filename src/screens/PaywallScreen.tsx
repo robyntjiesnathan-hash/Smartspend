@@ -9,7 +9,7 @@ import { PRO_FEATURES, FREE_VS_PRO, P } from '../data/constants';
 import { activatePurchase, restorePurchases } from '../utils/purchases';
 
 export function PaywallScreen() {
-  const { setScreen, setTab, activatePro, plan, setPlan } = useApp();
+  const { setScreen, setTab, prevScreen, activatePro, plan, setPlan } = useApp();
   const [loading, setLoading] = useState<'buy' | 'restore' | null>(null);
 
   const priceLabel  = plan === 'yearly' ? '$4.99' : '$11.99';
@@ -60,7 +60,10 @@ export function PaywallScreen() {
       <View style={{ flex: 1, maxWidth: 390, width: '100%', alignSelf: 'center' }}>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => { setScreen('app'); setTab('home'); }} disabled={isBusy}>
+        <TouchableOpacity
+          style={s.backBtn}
+          onPress={() => { setScreen(prevScreen); if (prevScreen === 'app') setTab('home'); }}
+          disabled={isBusy}>
           <Text style={s.backTxt}>← Back</Text>
         </TouchableOpacity>
         <View style={s.headerRow}>
@@ -189,10 +192,11 @@ export function PaywallScreen() {
 const s = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, backgroundColor: '#1B6E3A' },
   backBtn: {
-    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 99,
-    paddingHorizontal: 14, paddingVertical: 6, alignSelf: 'flex-start', marginBottom: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 99,
+    paddingHorizontal: 18, paddingVertical: 9, alignSelf: 'flex-start', marginBottom: 16,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
   },
-  backTxt: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  backTxt: { color: '#fff', fontSize: 14, fontWeight: '800' },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
   proBadge: {
     backgroundColor: '#C6F135', borderRadius: 99,

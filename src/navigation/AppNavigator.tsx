@@ -29,7 +29,7 @@ function TabBar() {
         <View style={[s.addBtn, { backgroundColor: th.primary }]}>
           <Text style={s.addIcon}>+</Text>
         </View>
-        <Text style={[s.tabLabel, tab === 'add' && { color: th.primary }]}>Log</Text>
+        <Text style={[s.tabLabel, { marginTop: 4 }, tab === 'add' && { color: th.primary }]}>Log</Text>
       </TouchableOpacity>
       {NAV_TABS.slice(2).map(t => <TabBtn key={t.id} t={t} active={tab === t.id} th={th} locked={!isPro} />)}
     </View>
@@ -44,7 +44,7 @@ function TabBtn({ t, active, th, locked }: {
   return (
     <TouchableOpacity style={s.tabBtn} onPress={() => go(t.id)} activeOpacity={0.7}>
       <View style={[s.iconWrap, active && { backgroundColor: th.primary }]}>
-        <Text style={{ fontSize: 18 }}>{t.icon}</Text>
+        <Text style={{ fontSize: 20 }}>{t.icon}</Text>
         {locked && (
           <View style={s.proTag}><Text style={s.proTagTxt}>Pro</Text></View>
         )}
@@ -83,25 +83,25 @@ export function AppNavigator() {
 const s = StyleSheet.create({
   tabBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
-    backgroundColor: 'rgba(255,255,255,0.97)',
-    borderTopWidth: 1.5, borderTopColor: 'rgba(0,0,0,0.07)',
-    paddingHorizontal: 4, paddingTop: 8, paddingBottom: 12,
+    backgroundColor: '#fff',
+    borderTopWidth: 1.5, borderTopColor: 'rgba(0,0,0,0.08)',
+    paddingHorizontal: 4, paddingTop: 10, paddingBottom: 16,
   },
-  tabBtn: { flex: 1, alignItems: 'center', gap: 3 },
-  iconWrap: { width: 40, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  tabLabel: { fontSize: 9, fontWeight: '800', color: P.muted },
+  tabBtn: { flex: 1, alignItems: 'center', gap: 4 },
+  iconWrap: { width: 46, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  tabLabel: { fontSize: 11, fontWeight: '800', color: P.muted },
   proTag: {
-    position: 'absolute', top: -3, right: -3,
+    position: 'absolute', top: -3, right: -4,
     backgroundColor: P.yellow, borderRadius: 99,
-    paddingHorizontal: 4, paddingVertical: 1,
+    paddingHorizontal: 5, paddingVertical: 1,
   },
-  proTagTxt: { fontSize: 7, fontWeight: '900', color: P.dark },
+  proTagTxt: { fontSize: 8, fontWeight: '900', color: P.dark },
   addWrap: { flex: 1, alignItems: 'center', gap: 0 },
   addBtn: {
-    width: 52, height: 52, borderRadius: 18,
+    width: 56, height: 56, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
-    marginBottom: -16, marginTop: -16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 8,
+    marginBottom: -18, marginTop: -18,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 10,
   },
-  addIcon: { fontSize: 28, color: '#fff', lineHeight: 32, fontWeight: '900' },
+  addIcon: { fontSize: 32, color: '#fff', fontWeight: '900', includeFontPadding: false, textAlignVertical: 'center' },
 });

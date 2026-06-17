@@ -14,7 +14,9 @@ export type Challenge = {
 type AppContextType = {
   isReady: boolean;
   screen: AppScreen;
+  prevScreen: AppScreen;
   setScreen: (s: AppScreen) => void;
+  navToPaywall: () => void;
   tab: AppTab;
   setTab: (t: AppTab) => void;
   isPro: boolean;
@@ -87,6 +89,7 @@ const SEED_TXNS: Transaction[] = [
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [screen, setScreen] = useState<AppScreen>('splash');
+  const [prevScreen, setPrevScreen] = useState<AppScreen>('splash');
   const [tab, setTab] = useState<AppTab>('home');
   const [isPro, setIsPro] = useState(false);
   const [plan, setPlan] = useState<'yearly' | 'monthly'>('yearly');
@@ -139,10 +142,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     saveSettings({ isPro, toggles, theme, acc }).catch(() => {});
   }, [isPro, toggles, theme, acc, isReady]);
 
+  const navToPaywall = useCallback(() => {
+    setPrevScreen(screen);
+    setScreen('paywall');
+  }, [screen]);
+
   const go = useCallback((t: AppTab) => {
-    if (!isPro && PRO_TABS.includes(t)) { setScreen('paywall'); return; }
+    if (!isPro && PRO_TABS.includes(t)) {
+      setPrevScreen(screen);
+      setScreen('paywall');
+      return;
+    }
     setTab(t); setScreen('app');
-  }, [isPro]);
+  }, [isPro, screen]);
 
   const doAdd = useCallback(() => {
     if (!addAmt || !addLabel) return;
@@ -219,7 +231,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AppContext.Provider value={{
-      isReady, screen, setScreen, tab, setTab, isPro, activatePro, plan, setPlan,
+      isReady, screen, prevScreen, setScreen, navToPaywall, tab, setTab, isPro, activatePro, plan, setPlan,
       xp, streak, mood, setMood, msg, setMsg, confetti, setConfetti,
       levelUp, setLevelUp, chModal, setChModal,
       addType, setAddType, addAmt, setAddAmt, addLabel, setAddLabel,
