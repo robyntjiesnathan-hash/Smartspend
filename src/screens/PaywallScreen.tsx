@@ -56,10 +56,11 @@ export function PaywallScreen() {
   const isBusy = loading !== null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: P.bg, maxWidth: 390, alignSelf: 'center', width: '100%' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: P.bg }}>
+      <View style={{ flex: 1, maxWidth: 390, width: '100%', alignSelf: 'center' }}>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => setScreen('splash')} disabled={isBusy}>
+        <TouchableOpacity style={s.backBtn} onPress={() => { setScreen('app'); setTab('home'); }} disabled={isBusy}>
           <Text style={s.backTxt}>← Back</Text>
         </TouchableOpacity>
         <View style={s.headerRow}>
@@ -180,6 +181,7 @@ export function PaywallScreen() {
           Terms of Service and Privacy Policy. Subscription auto-renews unless cancelled.
         </Text>
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
