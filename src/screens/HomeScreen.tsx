@@ -1,45 +1,38 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { Sprout } from '../components/Sprout';
 import { Ring } from '../components/Ring';
 import { useApp } from '../context/AppContext';
-import { QUESTS, TIPS, THEMES, P, getLvl, fmt, pct } from '../data/constants';
+import { QUESTS, TIPS, THEMES, P, getLvl, fmt, pct, CAT_ICON, fmtDate } from '../data/constants';
 
 export function HomeScreen() {
   const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go, transactions } = useApp();
-  const th = THEMES.find(t => t.id === theme) || THEMES[0];
-  const { c, p: lvlPct, inn, inn2 } = getLvl(xp);
+  const th = useMemo(() => THEMES.find(t => t.id === theme) || THEMES[0], [theme]);
+  const { c, p: lvlPct, inn, inn2 } = useMemo(() => getLvl(xp), [xp]);
   const tip = TIPS[tipIdx % TIPS.length];
   const health = 82;
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  }, []);
 
-  const balance = transactions.reduce((sum, t) => t.type === 'income' ? sum + t.amount : sum - t.amount, 0);
+  const balance = useMemo(
+    () => transactions.reduce((sum, t) => t.type === 'income' ? sum + t.amount : sum - t.amount, 0),
+    [transactions],
+  );
   const balanceFmt = (balance < 0 ? '-' : '') + fmt(Math.abs(balance));
 
-  const CAT_ICON: Record<string, string> = {
-    Groceries: '🛒', Transport: '🚗', Entertainment: '🎬',
-    'Dining Out': '🍽️', Health: '❤️', Shopping: '🛍️',
-    Bills: '📄', Other: '📝', Income: '💰',
-  };
-
-  const fmtDate = (d: string) => {
-    const today2 = new Date().toISOString().split('T')[0];
-    const yest = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    if (d === today2) return 'Today';
-    if (d === yest) return 'Yesterday';
-    return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  };
-
-  const today = new Date();
-  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const strip = [-2, -1, 0, 1, 2, 3].map(off => {
-    const d = new Date(today); d.setDate(today.getDate() + off);
-    return { d: DAY_NAMES[d.getDay()], n: d.getDate(), t: off === 0 };
-  });
+  const strip = useMemo(() => {
+    const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const today = new Date();
+    return [-2, -1, 0, 1, 2, 3].map(off => {
+      const d = new Date(today); d.setDate(today.getDate() + off);
+      return { d: DAY_NAMES[d.getDay()], n: d.getDate(), t: off === 0 };
+    });
+  }, []);
 
   const qaItems = [
     { label: 'Log expense', sub: 'Track a spend',       icon: '📝', bg: th.primary,  tc: '#fff',         a: 'log' },
@@ -201,7 +194,7 @@ export function HomeScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.txnLabel} numberOfLines={1}>{tx.note}</Text>
-                <Text style={s.txnSub}>{tx.category} · {fmtDate(tx.date)}</Text>
+                <Text style={s.txnSub}>{tx.category} · {fmtDate(tx.date, 'short')}</Text>
               </View>
               <Text style={[s.txnAmt, { color: tx.type === 'income' ? P.greenDeep : P.dark }]}>
                 {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}

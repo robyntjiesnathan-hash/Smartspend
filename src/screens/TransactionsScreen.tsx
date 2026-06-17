@@ -1,47 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useApp } from '../context/AppContext';
-import { P, THEMES, fmt } from '../data/constants';
+import { P, THEMES, fmt, CAT_ICON, fmtDate } from '../data/constants';
 
 type Filter = 'all' | 'income' | 'expense';
 
-const CAT_ICON: Record<string, string> = {
-  Groceries: '🛒', Transport: '🚗', Entertainment: '🎬',
-  'Dining Out': '🍽️', Health: '❤️', Shopping: '🛍️',
-  Bills: '📄', Other: '📝', Income: '💰',
-};
-
-function fmtDate(d: string): string {
-  const today = new Date().toISOString().split('T')[0];
-  const yest = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-  if (d === today) return 'Today';
-  if (d === yest) return 'Yesterday';
-  return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-}
-
 export function TransactionsScreen() {
   const { transactions, deleteTransaction, go, theme } = useApp();
-  const th = THEMES.find(t => t.id === theme) || THEMES[0];
+  const th = useMemo(() => THEMES.find(t => t.id === theme) || THEMES[0], [theme]);
   const [filter, setFilter] = useState<Filter>('all');
 
-  const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const balance = totalIncome - totalExpense;
+  const { totalIncome, totalExpense, balance } = useMemo(() => {
+    let inc = 0, exp = 0;
+    for (const t of transactions) {
+      if (t.type === 'income') inc += t.amount;
+      else exp += t.amount;
+    }
+    return { totalIncome: inc, totalExpense: exp, balance: inc - exp };
+  }, [transactions]);
 
-  const filtered = [...transactions]
-    .filter(t => filter === 'all' || t.type === filter)
-    .sort((a, b) => {
-      const diff = new Date(b.date + 'T00:00:00').getTime() - new Date(a.date + 'T00:00:00').getTime();
-      return diff !== 0 ? diff : b.id.localeCompare(a.id);
-    });
-
-  const groups: { label: string; items: typeof filtered }[] = [];
-  filtered.forEach(t => {
-    const label = fmtDate(t.date);
-    const last = groups[groups.length - 1];
-    if (last && last.label === label) last.items.push(t);
-    else groups.push({ label, items: [t] });
-  });
+  const groups = useMemo(() => {
+    const sorted = [...transactions]
+      .filter(t => filter === 'all' || t.type === filter)
+      .sort((a, b) => {
+        const diff = new Date(b.date + 'T00:00:00').getTime() - new Date(a.date + 'T00:00:00').getTime();
+        return diff !== 0 ? diff : b.id.localeCompare(a.id);
+      });
+    const result: { label: string; items: typeof sorted }[] = [];
+    for (const t of sorted) {
+      const label = fmtDate(t.date);
+      const last = result[result.length - 1];
+      if (last && last.label === label) last.items.push(t);
+      else result.push({ label, items: [t] });
+    }
+    return result;
+  }, [transactions, filter]);
 
   const confirmDelete = (id: string, note: string) => {
     Alert.alert(

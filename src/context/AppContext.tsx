@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
 import { INIT_CHALLENGES, getLvl } from '../data/constants';
 import { Transaction } from '../types';
 import { getTransactions, saveTransactions, getSettings, saveSettings } from '../storage';
@@ -64,6 +64,8 @@ type AppContextType = {
   go: (t: AppTab) => void;
 };
 
+const PRO_TABS: AppTab[] = ['progress', 'profile', 'weekly'];
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 function daysAgo(n: number): string {
@@ -110,6 +112,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [toggles, setToggles] = useState([true, true, true, true]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isReady, setIsReady] = useState(false);
+  const confettiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const addDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     Promise.all([getTransactions(), getSettings()]).then(([saved, settings]) => {
@@ -131,17 +135,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (transactions.length > 0) {
-      saveTransactions(transactions).catch(() => {});
-    }
-  }, [transactions]);
-
-  useEffect(() => {
     if (!isReady) return;
     saveSettings({ isPro, toggles, theme, acc }).catch(() => {});
   }, [isPro, toggles, theme, acc, isReady]);
-
-  const PRO_TABS: AppTab[] = ['progress', 'profile', 'weekly'];
 
   const go = useCallback((t: AppTab) => {
     if (!isPro && PRO_TABS.includes(t)) { setScreen('paywall'); return; }
@@ -161,7 +157,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       note: addLabel,
       date: new Date().toISOString().split('T')[0],
     };
-    setTransactions(prev => [newTxn, ...prev]);
+    setTransactions(prev => {
+      const next = [newTxn, ...prev];
+      saveTransactions(next).catch(() => {});
+      return next;
+    });
 
     const prev_xp = xp, next_xp = prev_xp + 25;
     const wasL = getLvl(prev_xp).c.lvl;
@@ -173,18 +173,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setLevelUp(nowC);
       setConfetti(true);
       setMsg("Level up! You're becoming a financial pro! 🏆");
-      setTimeout(() => setConfetti(false), 2600);
+      if (confettiTimerRef.current) clearTimeout(confettiTimerRef.current);
+      confettiTimerRef.current = setTimeout(() => setConfetti(false), 2600);
     } else {
       setMsg('Every dollar tracked grows your money tree! 🌱');
     }
     setAddDone(true);
-    setTimeout(() => {
+    if (addDoneTimerRef.current) clearTimeout(addDoneTimerRef.current);
+    addDoneTimerRef.current = setTimeout(() => {
       setAddDone(false); setAddAmt(''); setAddLabel(''); setMood('happy');
     }, 2400);
   }, [xp, addAmt, addLabel, addType, addCat]);
 
   const deleteTransaction = useCallback((id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
+    setTransactions(prev => {
+      const next = prev.filter(t => t.id !== id);
+      saveTransactions(next).catch(() => {});
+      return next;
+    });
   }, []);
 
   const markChallenge = useCallback((idx: number) => {
@@ -195,7 +201,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setChModal(ch);
         setXp(x => x + ch.xp);
         setConfetti(true);
-        setTimeout(() => setConfetti(false), 2800);
+        if (confettiTimerRef.current) clearTimeout(confettiTimerRef.current);
+        confettiTimerRef.current = setTimeout(() => setConfetti(false), 2800);
       }
       return { ...ch, done };
     }));

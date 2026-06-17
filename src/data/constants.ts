@@ -86,14 +86,19 @@ export const BUDGETS_DATA = [
   { cat: 'Health',        spent: 280, limit: 350, col: '#7B5CF5', icon: '❤️' },
 ];
 
-export const TXNS = [
-  { label: 'Whole Foods Market', amount: -86,   cat: 'Groceries',     icon: '🛒', date: 'Today' },
-  { label: 'Salary',             amount: 7125,  cat: 'Income',        icon: '💳', date: 'Today' },
-  { label: 'Netflix',            amount: -18,   cat: 'Entertainment', icon: '🎬', date: 'Yesterday' },
-  { label: 'Gas Station',        amount: -65,   cat: 'Transport',     icon: '⛽', date: 'Yesterday' },
-  { label: 'Freelance',          amount: 1125,  cat: 'Income',        icon: '💰', date: 'Mon' },
-  { label: 'Health Insurance',   amount: -280,  cat: 'Health',        icon: '❤️', date: 'Mon' },
-];
+export const CAT_ICON: Record<string, string> = {
+  Groceries: '🛒', Transport: '🚗', Entertainment: '🎬',
+  'Dining Out': '🍽️', Health: '❤️', Shopping: '🛍️',
+  Bills: '📄', Other: '📝', Income: '💰',
+};
+
+export function fmtDate(d: string, weekday: 'short' | 'long' = 'long'): string {
+  const today = new Date().toISOString().split('T')[0];
+  const yest = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  if (d === today) return 'Today';
+  if (d === yest) return 'Yesterday';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday, month: 'short', day: 'numeric' });
+}
 
 export const ACHS = [
   { icon: '🏆', title: 'First Budget',  desc: 'Created first budget',   xp: 50,  done: true },
@@ -143,7 +148,8 @@ export const FREE_VS_PRO = [
   { feat: 'Challenges & streaks', free: false, note: 'Pro only' },
 ];
 
-export const fmt = (n: number) => '$' + Math.abs(n).toLocaleString('en-US');
+const _nf = new Intl.NumberFormat('en-US');
+export const fmt = (n: number) => '$' + _nf.format(Math.abs(n));
 export const pct = (a: number, b: number) => Math.min(100, Math.round((a / b) * 100));
 
 export function getLvl(xp: number) {
