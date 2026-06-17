@@ -100,8 +100,8 @@ function Root() {
   if (screen === 'splash') return <SplashScreen />;
   if (screen === 'paywall') return <PaywallScreen />;
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: P.bg }}>
-      <View style={{ flex: 1, maxWidth: 390, width: '100%', alignSelf: 'center' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: P.bg, alignItems: 'center' }}>
+      <View style={{ flex: 1, width: '100%', maxWidth: 390 }}>
         <AppNavigator />
         <LevelUpModal />
         <ChallengeModal />

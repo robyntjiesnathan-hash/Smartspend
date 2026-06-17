@@ -96,7 +96,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 4, paddingVertical: 1,
   },
   proTagTxt: { fontSize: 7, fontWeight: '900', color: P.dark },
-  addWrap: { flex: 0, width: 60, alignItems: 'center', gap: 0 },
+  addWrap: { flex: 1, alignItems: 'center', gap: 0 },
   addBtn: {
     width: 52, height: 52, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
