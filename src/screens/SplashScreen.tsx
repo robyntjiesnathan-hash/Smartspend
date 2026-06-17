@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, SafeAreaView,
 } from 'react-native';
@@ -12,10 +12,9 @@ const FEATURES = [
 ];
 
 export function SplashScreen() {
-  const { setScreen, setTab, setPlan, navToPaywall } = useApp();
-  const [step, setStep] = useState(0);
+  const { setScreen, setTab, setPlan, navToPaywall, onboardingStep: step, setOnboardingStep: setStep } = useApp();
 
-  const goFree = () => { setScreen('app'); setTab('home'); };
+  const goFree = () => { setStep(0); setScreen('app'); setTab('home'); };
   const goPro  = () => { setPlan('yearly'); navToPaywall(); };
 
   return (

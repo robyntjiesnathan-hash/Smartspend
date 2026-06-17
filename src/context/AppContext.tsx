@@ -17,6 +17,8 @@ type AppContextType = {
   prevScreen: AppScreen;
   setScreen: (s: AppScreen) => void;
   navToPaywall: () => void;
+  onboardingStep: number;
+  setOnboardingStep: (n: number) => void;
   tab: AppTab;
   setTab: (t: AppTab) => void;
   isPro: boolean;
@@ -90,6 +92,7 @@ const SEED_TXNS: Transaction[] = [
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [screen, setScreen] = useState<AppScreen>('splash');
   const [prevScreen, setPrevScreen] = useState<AppScreen>('splash');
+  const [onboardingStep, setOnboardingStep] = useState(0);
   const [tab, setTab] = useState<AppTab>('home');
   const [isPro, setIsPro] = useState(false);
   const [plan, setPlan] = useState<'yearly' | 'monthly'>('yearly');
@@ -231,7 +234,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AppContext.Provider value={{
-      isReady, screen, prevScreen, setScreen, navToPaywall, tab, setTab, isPro, activatePro, plan, setPlan,
+      isReady, screen, prevScreen, setScreen, navToPaywall, onboardingStep, setOnboardingStep, tab, setTab, isPro, activatePro, plan, setPlan,
       xp, streak, mood, setMood, msg, setMsg, confetti, setConfetti,
       levelUp, setLevelUp, chModal, setChModal,
       addType, setAddType, addAmt, setAddAmt, addLabel, setAddLabel,
