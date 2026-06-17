@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, SafeAreaView,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, ScrollView,
 } from 'react-native';
 import { Sprout } from '../components/Sprout';
 import { useApp } from '../context/AppContext';
@@ -59,16 +59,22 @@ export function PaywallScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <View style={s.inner}>
 
-        {/* Back */}
+      {/* ── Back button — always visible at the top ── */}
+      <View style={s.topBar}>
         <TouchableOpacity style={s.backBtn} onPress={goBack} disabled={isBusy}>
           <Text style={s.backTxt}>← Back</Text>
         </TouchableOpacity>
+      </View>
 
-        {/* Mascot + headline */}
+      {/* ── Scrollable hero + benefits ── */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}>
+
         <View style={s.hero}>
-          <Sprout lvl={5} size={110} mood="excited" acc="crown" />
+          <Sprout lvl={5} size={100} mood="excited" acc="crown" />
           <View style={s.proBadge}>
             <Text style={s.proBadgeTxt}>SMARTSPEND PRO</Text>
           </View>
@@ -82,7 +88,6 @@ export function PaywallScreen() {
           <Text style={s.billed}>Billed $59.99/yr · Cancel anytime</Text>
         </View>
 
-        {/* Benefits */}
         <View style={s.benefits}>
           {BENEFITS.map(b => (
             <View key={b.text} style={s.benefitRow}>
@@ -95,7 +100,10 @@ export function PaywallScreen() {
           ))}
         </View>
 
-        {/* CTA */}
+      </ScrollView>
+
+      {/* ── Fixed footer — CTA always visible ── */}
+      <View style={s.footer}>
         <TouchableOpacity
           style={[s.cta, isBusy && { opacity: 0.7 }]}
           onPress={handleBuy}
@@ -106,7 +114,6 @@ export function PaywallScreen() {
             : <Text style={s.ctaTxt}>Start Free Trial →</Text>}
         </TouchableOpacity>
 
-        {/* Secondary links */}
         <View style={s.links}>
           <TouchableOpacity onPress={() => { setScreen('app'); setTab('home'); }} disabled={isBusy}>
             <Text style={s.linkTxt}>Continue free</Text>
@@ -122,19 +129,18 @@ export function PaywallScreen() {
         <Text style={s.legal}>
           Auto-renews yearly. Cancel anytime in your account settings.
         </Text>
-
       </View>
+
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#1B6E3A' },
-  inner: {
-    flex: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 28,
-    justifyContent: 'space-between',
-  },
 
+  topBar: {
+    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4,
+  },
   backBtn: {
     backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 99,
     paddingHorizontal: 18, paddingVertical: 9, alignSelf: 'flex-start',
@@ -142,11 +148,16 @@ const s = StyleSheet.create({
   },
   backTxt: { color: '#fff', fontSize: 14, fontWeight: '800' },
 
-  // Hero block
+  scroll: {
+    paddingHorizontal: 24, paddingTop: 8, paddingBottom: 16,
+    gap: 20,
+  },
+
+  // Hero
   hero: { alignItems: 'center', gap: 6 },
   proBadge: {
     backgroundColor: '#C6F135', borderRadius: 99,
-    paddingHorizontal: 14, paddingVertical: 4, marginTop: 8,
+    paddingHorizontal: 14, paddingVertical: 4, marginTop: 6,
   },
   proBadgeTxt: { fontSize: 11, fontWeight: '900', color: '#145229', letterSpacing: 0.6 },
   headline: { color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: -0.8, marginTop: 2 },
@@ -169,15 +180,23 @@ const s = StyleSheet.create({
   benefitTxt: { flex: 1, color: '#fff', fontSize: 15, fontWeight: '700' },
   check: { color: '#C6F135', fontSize: 18, fontWeight: '900' },
 
-  // CTA
+  // Fixed footer
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 24,
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#1B6E3A',
+  },
   cta: {
     backgroundColor: '#C6F135', borderRadius: 18, paddingVertical: 18,
-    alignItems: 'center', minHeight: 58, justifyContent: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8,
+    alignItems: 'center', justifyContent: 'center', minHeight: 58,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 8,
   },
   ctaTxt: { color: '#145229', fontSize: 17, fontWeight: '900' },
 
-  // Links
   links: {
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10,
   },
