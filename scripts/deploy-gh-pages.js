@@ -7,6 +7,27 @@ const { execSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 
+// ── 0. Load .env so we can inject EXPO_PUBLIC_* values into the page ───────
+function loadEnv() {
+  const envFile = path.join(ROOT, '.env');
+  const result = {};
+  if (!fs.existsSync(envFile)) return result;
+  for (const line of fs.readFileSync(envFile, 'utf8').split('\n')) {
+    const m = line.match(/^\s*(EXPO_PUBLIC_\w+)\s*=\s*(.+)\s*$/);
+    if (m) result[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
+  }
+  return result;
+}
+const publicEnv = loadEnv();
+const envScript = Object.entries(publicEnv)
+  .map(([k, v]) => `process.env[${JSON.stringify(k)}]=${JSON.stringify(v)};`)
+  .join('');
+if (Object.keys(publicEnv).length) {
+  console.log('Env vars baked in:', Object.keys(publicEnv).join(', '));
+} else {
+  console.log('No .env file found — deploying without Supabase (guest mode only)');
+}
+
 // ── 1. Find the main bundle ────────────────────────────────────────────────
 const jsDir = path.join(DIST, '_expo', 'static', 'js', 'web');
 const bundles = fs.readdirSync(jsDir).filter(f => f.startsWith('AppEntry'));
@@ -37,6 +58,10 @@ const html = `<!DOCTYPE html><html lang="en"><head>
       navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));
       caches.keys().then(k=>k.forEach(x=>caches.delete(x)));
     }
+    // Inject public env vars so process.env.EXPO_PUBLIC_* resolves at runtime
+    var process=window.process=window.process||{};
+    process.env=process.env||{};
+    ${envScript}
   </script>
 </head><body>
 <div id="root"></div>
@@ -92,7 +117,7 @@ copyDir(DEPLOY, WT);
 
 execSync('git add -A', { stdio: 'inherit', cwd: WT });
 const ts = new Date().toISOString().slice(0, 16).replace('T', ' ');
-execSync(`git commit -m "Deploy PWA: production auth + savings goals (${ts})" || echo "nothing to commit"`, { stdio: 'inherit', cwd: WT });
+execSync(`git commit -m "Deploy PWA: Supabase auth connected (${ts})" || echo "nothing to commit"`, { stdio: 'inherit', cwd: WT });
 execSync('git push -u origin gh-pages', { stdio: 'inherit', cwd: WT });
 
 // Cleanup
