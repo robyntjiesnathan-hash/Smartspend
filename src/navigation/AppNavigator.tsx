@@ -24,14 +24,12 @@ function TabBar() {
   return (
     <View style={s.tabBar}>
       {NAV_TABS.slice(0, 2).map(t => <TabBtn key={t.id} t={t} active={tab === t.id} th={th} />)}
-      {/* Center Log button */}
+      {/* Center plus button */}
       <TouchableOpacity style={s.addWrap} onPress={() => go('add')} activeOpacity={0.8}>
         <View style={[s.addBtn, { backgroundColor: th.primary }]}>
-          {/* View-drawn plus — always crisp, no font rendering */}
           <View style={s.plusH} />
           <View style={s.plusV} />
         </View>
-        <Text style={[s.addLabel, tab === 'add' && { color: th.primary }]}>Log</Text>
       </TouchableOpacity>
       {NAV_TABS.slice(2).map(t => <TabBtn key={t.id} t={t} active={tab === t.id} th={th} locked={!isPro} />)}
     </View>
@@ -98,22 +96,18 @@ const s = StyleSheet.create({
     paddingHorizontal: 5, paddingVertical: 1,
   },
   proTagTxt: { fontSize: 8, fontWeight: '900', color: P.dark },
-  addWrap: { flex: 1, alignItems: 'center', paddingBottom: 2 },
+  addWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   addBtn: {
-    width: 62, height: 62, borderRadius: 22,
+    width: 58, height: 58, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center',
-    marginBottom: -20, marginTop: -20,
-    // layered shadow for depth
     shadowColor: '#1B6E3A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    elevation: 14,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 12,
     borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: 'rgba(255,255,255,0.28)',
   },
-  // View-drawn plus bars
-  plusH: { position: 'absolute', width: 26, height: 3.5, backgroundColor: '#fff', borderRadius: 2 },
-  plusV: { position: 'absolute', width: 3.5, height: 26, backgroundColor: '#fff', borderRadius: 2 },
-  addLabel: { fontSize: 12, fontWeight: '900', color: P.muted, marginTop: 6, letterSpacing: 0.3 },
+  plusH: { position: 'absolute', width: 24, height: 3.5, backgroundColor: '#fff', borderRadius: 2 },
+  plusV: { position: 'absolute', width: 3.5, height: 24, backgroundColor: '#fff', borderRadius: 2 },
 });
