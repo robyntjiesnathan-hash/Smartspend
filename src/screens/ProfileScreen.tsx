@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { Sprout } from '../components/Sprout';
 import { useApp } from '../context/AppContext';
 import { THEMES, ACCESSORIES, P, getLvl } from '../data/constants';
@@ -29,6 +29,13 @@ export function ProfileScreen() {
 
   const handleToggle = async (idx: number) => {
     const enabling = !toggles[idx];
+
+    if (Platform.OS === 'web') {
+      // On web just flip the preference — no native notification scheduling
+      setToggles(t => { const n = [...t]; n[idx] = enabling; return n; });
+      return;
+    }
+
     if (enabling) {
       const granted = await requestNotifPermission();
       if (!granted) {
@@ -155,9 +162,10 @@ export function ProfileScreen() {
                   <Text style={s.settingSub}>{item.s}</Text>
                 </View>
                 <TouchableOpacity
-                  style={[s.toggle, { backgroundColor: toggles[idx] ? P.green : '#CBD5CB' }]}
-                  onPress={() => handleToggle(idx)}>
-                  <View style={[s.toggleThumb, { left: toggles[idx] ? 20 : 2 }]} />
+                  style={[s.toggle, { backgroundColor: toggles[idx] ? P.green : '#C4CFC4' }]}
+                  onPress={() => handleToggle(idx)}
+                  activeOpacity={0.8}>
+                  <View style={[s.toggleThumb, { left: toggles[idx] ? 24 : 3 }]} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -237,11 +245,11 @@ const s = StyleSheet.create({
   },
   settingTitle: { fontWeight: '800', fontSize: 13, color: '#111C11', marginBottom: 2 },
   settingSub: { color: '#6B8F6B', fontSize: 11, fontWeight: '600' },
-  toggle: { width: 42, height: 24, borderRadius: 99, position: 'relative' },
+  toggle: { width: 50, height: 28, borderRadius: 99, position: 'relative', justifyContent: 'center' },
   toggleThumb: {
-    width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff',
-    position: 'absolute', top: 2,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2,
+    width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
+    position: 'absolute', top: 3,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3, elevation: 3,
   },
   upgradeBtn: {
     backgroundColor: '#111C11', borderRadius: 16, paddingVertical: 14,

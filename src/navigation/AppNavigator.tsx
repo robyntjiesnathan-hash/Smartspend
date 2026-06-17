@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { HomeScreen } from '../screens/HomeScreen';
 import { BudgetsScreen } from '../screens/BudgetsScreen';
 import { AddScreen } from '../screens/AddScreen';
@@ -24,12 +24,14 @@ function TabBar() {
   return (
     <View style={s.tabBar}>
       {NAV_TABS.slice(0, 2).map(t => <TabBtn key={t.id} t={t} active={tab === t.id} th={th} />)}
-      {/* Center add button */}
-      <TouchableOpacity style={s.addWrap} onPress={() => go('add')} activeOpacity={0.85}>
+      {/* Center Log button */}
+      <TouchableOpacity style={s.addWrap} onPress={() => go('add')} activeOpacity={0.8}>
         <View style={[s.addBtn, { backgroundColor: th.primary }]}>
-          <Text style={s.addIcon}>+</Text>
+          {/* View-drawn plus — always crisp, no font rendering */}
+          <View style={s.plusH} />
+          <View style={s.plusV} />
         </View>
-        <Text style={[s.tabLabel, { marginTop: 4 }, tab === 'add' && { color: th.primary }]}>Log</Text>
+        <Text style={[s.addLabel, tab === 'add' && { color: th.primary }]}>Log</Text>
       </TouchableOpacity>
       {NAV_TABS.slice(2).map(t => <TabBtn key={t.id} t={t} active={tab === t.id} th={th} locked={!isPro} />)}
     </View>
@@ -96,12 +98,22 @@ const s = StyleSheet.create({
     paddingHorizontal: 5, paddingVertical: 1,
   },
   proTagTxt: { fontSize: 8, fontWeight: '900', color: P.dark },
-  addWrap: { flex: 1, alignItems: 'center', gap: 0 },
+  addWrap: { flex: 1, alignItems: 'center', paddingBottom: 2 },
   addBtn: {
-    width: 56, height: 56, borderRadius: 18,
+    width: 62, height: 62, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center',
-    marginBottom: -18, marginTop: -18,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 10,
+    marginBottom: -20, marginTop: -20,
+    // layered shadow for depth
+    shadowColor: '#1B6E3A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 14,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
-  addIcon: { fontSize: 32, color: '#fff', fontWeight: '900', includeFontPadding: false, textAlignVertical: 'center' },
+  // View-drawn plus bars
+  plusH: { position: 'absolute', width: 26, height: 3.5, backgroundColor: '#fff', borderRadius: 2 },
+  plusV: { position: 'absolute', width: 3.5, height: 26, backgroundColor: '#fff', borderRadius: 2 },
+  addLabel: { fontSize: 12, fontWeight: '900', color: P.muted, marginTop: 6, letterSpacing: 0.3 },
 });
