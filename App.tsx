@@ -23,7 +23,7 @@ function Confetti() {
   );
 }
 
-function FallingPiece({ col, left, delay }: { col: string; left: string; delay: number }) {
+function FallingPiece({ col, left, delay }: { col: string; left: `${number}%`; delay: number }) {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     setTimeout(() => {

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
 import { INIT_CHALLENGES, getLvl } from '../data/constants';
-import { Transaction, SavingsGoal, UserProfile } from '../types';
-import { getTransactions, saveTransactions, getSettings, saveSettings, getSavingsGoals, saveSavingsGoals, getUserProfile, saveUserProfile } from '../storage';
+import { Transaction, SavingsGoal, UserProfile, Budget } from '../types';
+import { getTransactions, saveTransactions, getSettings, saveSettings, getSavingsGoals, saveSavingsGoals, getUserProfile, saveUserProfile, getBudgets, saveBudgets } from '../storage';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 
 export type AppScreen = 'splash' | 'auth' | 'paywall' | 'app';
@@ -78,9 +78,13 @@ type AppContextType = {
   addSavingsGoal: (goal: Omit<SavingsGoal, 'id'>) => void;
   deleteSavingsGoal: (id: string) => void;
   updateSavingsGoalAmount: (id: string, addAmount: number) => void;
+  // Budgets
+  budgets: Budget[];
+  saveBudget: (category: string, limit: number) => void;
+  deleteBudget: (category: string) => void;
 };
 
-const PRO_TABS: AppTab[] = ['progress', 'profile', 'weekly'];
+const PRO_TABS: AppTab[] = ['progress', 'weekly'];
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -130,6 +134,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [toggles, setToggles] = useState([true, true, true, true]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
+  const [budgets, setBudgetsState] = useState<Budget[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isReady, setIsReady] = useState(false);
   const confettiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -142,7 +147,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       getSettings(),
       getSavingsGoals(),
       getUserProfile(),
-    ]).then(([saved, settings, goals, profile]) => {
+      getBudgets(),
+    ]).then(([saved, settings, goals, profile, storedBudgets]) => {
       if (settings.isPro !== undefined) setIsPro(settings.isPro);
       if (settings.toggles)            setToggles(settings.toggles);
       if (settings.theme)              setTheme(settings.theme);
@@ -151,6 +157,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (settings.streak !== undefined) setStreak(settings.streak);
 
       if (goals.length > 0) setSavingsGoals(goals);
+      if (storedBudgets.length > 0) setBudgetsState(storedBudgets);
 
       if (profile) {
         setUserProfile(profile);
@@ -480,6 +487,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [userProfile]);
 
+  // ── Budgets ───────────────────────────────────────────────────────────────
+  const saveBudget = useCallback((category: string, limit: number) => {
+    setBudgetsState(prev => {
+      const idx = prev.findIndex(b => b.category === category);
+      const next = idx >= 0
+        ? prev.map((b, i) => i === idx ? { ...b, limit } : b)
+        : [...prev, { category, limit }];
+      saveBudgets(next).catch(() => {});
+      return next;
+    });
+  }, []);
+
+  const deleteBudget = useCallback((category: string) => {
+    setBudgetsState(prev => {
+      const next = prev.filter(b => b.category !== category);
+      saveBudgets(next).catch(() => {});
+      return next;
+    });
+  }, []);
+
   // ── Challenges ────────────────────────────────────────────────────────────
   const markChallenge = useCallback((idx: number) => {
     setChallenges(prev => prev.map((ch, i) => {
@@ -523,6 +550,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       doAdd, go,
       userProfile, signInUser, signUpUser, signOutUser, updateDisplayName,
       savingsGoals, addSavingsGoal, deleteSavingsGoal, updateSavingsGoalAmount,
+      budgets, saveBudget, deleteBudget,
     }}>
       {children}
     </AppContext.Provider>

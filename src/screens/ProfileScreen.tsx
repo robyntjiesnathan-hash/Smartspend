@@ -101,6 +101,7 @@ export function ProfileScreen() {
   const [legalModal, setLegalModal] = useState<null | 'tos' | 'privacy'>(null);
   const [editName, setEditName] = useState(false);
   const [nameInput, setNameInput] = useState(userProfile?.displayName || '');
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
 
   const NOTIF_SCHEDULERS = [
     scheduleDailyReminder,
@@ -289,15 +290,23 @@ export function ProfileScreen() {
               </TouchableOpacity>
             )}
 
-            {userProfile && (
-              <TouchableOpacity
-                style={s.signOutBtn}
-                onPress={() => Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Sign out', style: 'destructive', onPress: signOutUser },
-                ])}>
+            {userProfile && !confirmSignOut && (
+              <TouchableOpacity style={s.signOutBtn} onPress={() => setConfirmSignOut(true)}>
                 <Text style={s.signOutTxt}>Sign out</Text>
               </TouchableOpacity>
+            )}
+            {userProfile && confirmSignOut && (
+              <View style={s.signOutConfirm}>
+                <Text style={s.signOutConfirmTxt}>Are you sure you want to sign out?</Text>
+                <View style={s.signOutConfirmRow}>
+                  <TouchableOpacity style={s.signOutCancelBtn} onPress={() => setConfirmSignOut(false)}>
+                    <Text style={s.signOutCancelTxt}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={s.signOutConfirmBtn} onPress={() => { setConfirmSignOut(false); signOutUser(); }}>
+                    <Text style={s.signOutConfirmBtnTxt}>Yes, sign out</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             )}
 
             <Text style={[s.sectionLabel, { marginTop: 16 }]}>ABOUT</Text>
@@ -382,6 +391,16 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: '#FECACA',
   },
   signOutTxt: { color: '#EF4444', fontSize: 14, fontWeight: '800' },
+  signOutConfirm: {
+    backgroundColor: '#FEF2F2', borderRadius: 14, padding: 16, marginTop: 8,
+    borderWidth: 1, borderColor: '#FECACA', gap: 12,
+  },
+  signOutConfirmTxt: { color: '#7F1D1D', fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  signOutConfirmRow: { flexDirection: 'row', gap: 10 },
+  signOutCancelBtn: { flex: 1, backgroundColor: '#fff', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: 1, borderColor: '#FECACA' },
+  signOutCancelTxt: { color: '#6B7280', fontSize: 13, fontWeight: '800' },
+  signOutConfirmBtn: { flex: 1, backgroundColor: '#EF4444', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  signOutConfirmBtnTxt: { color: '#fff', fontSize: 13, fontWeight: '900' },
   badgeRow: { flexDirection: 'row', gap: 10 },
   badge: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 },
   proBadge: { backgroundColor: '#C6F135' },
