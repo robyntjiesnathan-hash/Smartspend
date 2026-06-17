@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import {
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert,
+  Platform, Modal, Linking, SafeAreaView,
+} from 'react-native';
 import { Sprout } from '../components/Sprout';
 import { useApp } from '../context/AppContext';
 import { THEMES, ACCESSORIES, P, getLvl } from '../data/constants';
@@ -12,6 +15,82 @@ import {
   cancelNotif,
 } from '../utils/notifications';
 
+const LEGAL: Record<'tos' | 'privacy', { title: string; body: string }> = {
+  tos: {
+    title: 'Terms of Service',
+    body: `Last updated: June 2026
+
+1. ACCEPTANCE
+By downloading or using SmartSpend you agree to these Terms of Service. If you do not agree, do not use the app.
+
+2. DESCRIPTION OF SERVICE
+SmartSpend is a personal finance tracking tool that helps you log expenses, set budgets, and build healthy money habits. It is provided for informational and personal organisational purposes only.
+
+3. NO FINANCIAL ADVICE
+Nothing in SmartSpend constitutes financial, investment, tax, or legal advice. Always consult a qualified professional before making financial decisions.
+
+4. YOUR DATA
+All transaction data, budgets, and settings are stored locally on your device. SmartSpend does not upload your financial data to any external server.
+
+5. SUBSCRIPTIONS
+SmartSpend Pro is available as a monthly ($11.99/mo) or yearly ($59.99/yr) subscription. Subscriptions automatically renew unless cancelled at least 24 hours before the renewal date. Manage or cancel subscriptions through your App Store or Google Play account settings.
+
+6. FREE TRIAL
+Yearly plans include a 7-day free trial for new subscribers. You will not be charged during the trial period. Cancel before the trial ends to avoid being billed.
+
+7. REFUNDS
+Refund requests are handled by Apple or Google in accordance with their respective refund policies.
+
+8. ACCEPTABLE USE
+You agree not to reverse-engineer, copy, modify, or distribute any part of the app.
+
+9. LIMITATION OF LIABILITY
+To the fullest extent permitted by law, SmartSpend and its developers are not liable for any indirect, incidental, special, or consequential damages arising from your use of the app.
+
+10. CHANGES TO TERMS
+We may update these terms at any time. Continued use of the app after changes constitutes your acceptance of the updated terms.
+
+11. CONTACT
+questions@smartspend.app`,
+  },
+  privacy: {
+    title: 'Privacy Policy',
+    body: `Last updated: June 2026
+
+1. OVERVIEW
+SmartSpend is designed with privacy first. We collect as little data as possible and store it locally on your device.
+
+2. DATA WE STORE LOCALLY
+• Transaction records you enter (amount, category, note, date)
+• Budget preferences and spending targets
+• App settings (theme, accessories, notification preferences)
+• XP, streak, and level progress
+
+All of the above is stored using AsyncStorage on your device only. It is never transmitted to our servers.
+
+3. PAYMENT PROCESSING
+If you subscribe to SmartSpend Pro, payments are processed securely by Apple (App Store) or Google (Google Play). We use RevenueCat to manage subscription status. RevenueCat may collect anonymised purchase data as described at revenuecat.com/privacy. We do not receive or store your payment card details.
+
+4. PUSH NOTIFICATIONS
+If you enable notifications, reminders are scheduled locally on your device using the operating system's notification scheduler. No data is sent to external servers to deliver these notifications.
+
+5. ANALYTICS & ADVERTISING
+SmartSpend contains no third-party analytics SDKs, advertising networks, or tracking pixels. We do not track your behaviour across apps or websites.
+
+6. CHILDREN
+SmartSpend is not directed at children under the age of 13. We do not knowingly collect personal information from children.
+
+7. DATA RETENTION & DELETION
+Because all data is stored locally, you can delete it at any time by clearing the app's data in your device settings or by uninstalling the app.
+
+8. CHANGES TO THIS POLICY
+We may update this Privacy Policy from time to time. We will note the date of the last update at the top of this document.
+
+9. CONTACT
+privacy@smartspend.app`,
+  },
+};
+
 export function ProfileScreen() {
   const {
     xp, streak, isPro, mood, acc, setAcc, theme, setTheme,
@@ -19,6 +98,7 @@ export function ProfileScreen() {
     toggles, setToggles, setScreen,
   } = useApp();
   const [notifIds, setNotifIds] = useState<(string | null)[]>([null, null, null, null]);
+  const [legalModal, setLegalModal] = useState<null | 'tos' | 'privacy'>(null);
 
   const NOTIF_SCHEDULERS = [
     scheduleDailyReminder,
@@ -57,6 +137,7 @@ export function ProfileScreen() {
   const { c } = getLvl(xp);
 
   return (
+    <>
     <ScrollView style={{ flex: 1, backgroundColor: P.bg }} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={[s.header, { backgroundColor: P.greenDeep }]}>
@@ -178,21 +259,66 @@ export function ProfileScreen() {
 
             <Text style={[s.sectionLabel, { marginTop: 16 }]}>ABOUT</Text>
             {[
-              { i: '📋', l: 'Terms of Service' },
-              { i: '🔒', l: 'Privacy Policy' },
-              { i: '💬', l: 'Send feedback' },
-              { i: '⭐', l: 'Rate SmartSpend' },
+              {
+                i: '📋', l: 'Terms of Service',
+                onPress: () => setLegalModal('tos'),
+              },
+              {
+                i: '🔒', l: 'Privacy Policy',
+                onPress: () => setLegalModal('privacy'),
+              },
+              {
+                i: '💬', l: 'Send feedback',
+                onPress: () => Linking.openURL(
+                  'mailto:support@smartspend.app?subject=SmartSpend%20Feedback&body=Hi%20SmartSpend%20team%2C%0A%0A'
+                ).catch(() => Alert.alert('No email app found', 'Please email us at support@smartspend.app')),
+              },
+              {
+                i: '⭐', l: 'Rate SmartSpend',
+                onPress: () => {
+                  const url = Platform.OS === 'ios'
+                    ? 'https://apps.apple.com/app/smartspend'
+                    : 'https://play.google.com/store/apps/details?id=com.smartspend.app';
+                  Linking.openURL(url).catch(() =>
+                    Alert.alert('Coming soon', 'Rating will be available once SmartSpend is live on the store.')
+                  );
+                },
+              },
             ].map(m => (
-              <View key={m.l} style={s.aboutRow}>
+              <TouchableOpacity key={m.l} style={s.aboutRow} onPress={m.onPress} activeOpacity={0.7}>
                 <Text style={{ fontSize: 18 }}>{m.i}</Text>
                 <Text style={s.aboutLabel}>{m.l}</Text>
                 <Text style={{ color: '#6B8F6B', fontSize: 16 }}>›</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </>
         )}
       </View>
     </ScrollView>
+
+    {/* ── Legal modal (ToS / Privacy Policy) ── */}
+    <Modal
+      visible={legalModal !== null}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => setLegalModal(null)}>
+      <SafeAreaView style={m.safe}>
+        {legalModal && (
+          <>
+            <View style={m.modalHeader}>
+              <Text style={m.modalTitle}>{LEGAL[legalModal].title}</Text>
+              <TouchableOpacity style={m.closeBtn} onPress={() => setLegalModal(null)} activeOpacity={0.7}>
+                <Text style={m.closeTxt}>✕ Close</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={m.modalBody} showsVerticalScrollIndicator={false}>
+              <Text style={m.bodyTxt}>{LEGAL[legalModal].body}</Text>
+            </ScrollView>
+          </>
+        )}
+      </SafeAreaView>
+    </Modal>
+    </>
   );
 }
 
@@ -263,4 +389,22 @@ const s = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
   },
   aboutLabel: { flex: 1, fontWeight: '800', fontSize: 13, color: '#111C11' },
+});
+
+const m = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F2FAF4' },
+  modalHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 16,
+    borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.07)',
+    backgroundColor: '#fff',
+  },
+  modalTitle: { fontSize: 17, fontWeight: '900', color: '#111C11' },
+  closeBtn: {
+    backgroundColor: '#F2FAF4', borderRadius: 99,
+    paddingHorizontal: 14, paddingVertical: 7,
+  },
+  closeTxt: { fontSize: 13, fontWeight: '800', color: '#1B6E3A' },
+  modalBody: { padding: 22, paddingBottom: 48 },
+  bodyTxt: { fontSize: 14, fontWeight: '500', color: '#2B4A2B', lineHeight: 22 },
 });
