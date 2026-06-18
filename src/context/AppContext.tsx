@@ -331,18 +331,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         options: { data: { display_name: displayName } },
       });
       if (error) {
-        const msg = error.message && error.message !== '{}'
+        const msg = (error.message && error.message !== '{}' && error.message !== 'undefined')
           ? error.message
-          : 'Sign up failed. Your Supabase project may be paused — visit supabase.com/dashboard to resume it.';
+          : 'Sign up failed — check the Supabase dashboard logs for details (Database error saving new user usually means the trigger needs fixing).';
         return msg;
       }
       if (data.user && !data.session) {
         return 'CONFIRM_EMAIL';
       }
-      if (data.user) {
+      if (data.user && data.session) {
         const profile: UserProfile = { id: data.user.id, email: data.user.email ?? '', displayName };
         setUserProfile(profile);
         await saveUserProfile(profile);
+        // Upsert profile directly — resilient even if the DB trigger failed
+        void sb.from('profiles').upsert({ id: data.user.id, display_name: displayName });
         setXp(0);
         setStreak(0);
         setTransactions([]);
