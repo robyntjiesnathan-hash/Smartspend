@@ -279,30 +279,38 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const signInUser = useCallback(async (email: string, password: string): Promise<string | null> => {
     const sb = getSupabase();
     if (!sb) {
-      // Offline mode: accept any credentials, store locally
+      // Offline / Supabase not configured — store locally
       const profile: UserProfile = { id: 'local', email, displayName: email.split('@')[0] };
       setUserProfile(profile);
       await saveUserProfile(profile);
       return null;
     }
-    const { error, data } = await sb.auth.signInWithPassword({ email, password });
-    if (error) return error.message;
-    if (data.user) {
-      const profile: UserProfile = {
-        id: data.user.id,
-        email: data.user.email ?? '',
-        displayName: data.user.user_metadata?.display_name || email.split('@')[0],
-      };
-      setUserProfile(profile);
-      await saveUserProfile(profile);
-      try {
-        await loadSupabaseData(data.user.id);
-      } catch {
-        // Data load failed — still navigate to app with local/empty state
-        setScreen('app');
+    try {
+      const { error, data } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        const msg = error.message && error.message !== '{}'
+          ? error.message
+          : 'Sign in failed. Your Supabase project may be paused — visit supabase.com/dashboard to resume it.';
+        return msg;
       }
+      if (data.user) {
+        const profile: UserProfile = {
+          id: data.user.id,
+          email: data.user.email ?? '',
+          displayName: data.user.user_metadata?.display_name || email.split('@')[0],
+        };
+        setUserProfile(profile);
+        await saveUserProfile(profile);
+        try {
+          await loadSupabaseData(data.user.id);
+        } catch {
+          setScreen('app');
+        }
+      }
+      return null;
+    } catch (e: any) {
+      return e?.message || 'Unable to connect. Check your internet and try again.';
     }
-    return null;
   }, []);
 
   const signUpUser = useCallback(async (email: string, password: string, displayName: string): Promise<string | null> => {
@@ -316,25 +324,33 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setTransactions([]);
       return null;
     }
-    const { error, data } = await sb.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: displayName } },
-    });
-    if (error) return error.message;
-    if (data.user && !data.session) {
-      // Supabase requires email confirmation — tell the caller
-      return 'CONFIRM_EMAIL';
+    try {
+      const { error, data } = await sb.auth.signUp({
+        email,
+        password,
+        options: { data: { display_name: displayName } },
+      });
+      if (error) {
+        const msg = error.message && error.message !== '{}'
+          ? error.message
+          : 'Sign up failed. Your Supabase project may be paused — visit supabase.com/dashboard to resume it.';
+        return msg;
+      }
+      if (data.user && !data.session) {
+        return 'CONFIRM_EMAIL';
+      }
+      if (data.user) {
+        const profile: UserProfile = { id: data.user.id, email: data.user.email ?? '', displayName };
+        setUserProfile(profile);
+        await saveUserProfile(profile);
+        setXp(0);
+        setStreak(0);
+        setTransactions([]);
+      }
+      return null;
+    } catch (e: any) {
+      return e?.message || 'Unable to connect. Check your internet and try again.';
     }
-    if (data.user) {
-      const profile: UserProfile = { id: data.user.id, email: data.user.email ?? '', displayName };
-      setUserProfile(profile);
-      await saveUserProfile(profile);
-      setXp(0);
-      setStreak(0);
-      setTransactions([]);
-    }
-    return null;
   }, []);
 
   const signOutUser = useCallback(async () => {
