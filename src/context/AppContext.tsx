@@ -106,7 +106,8 @@ const SEED_TXNS: Transaction[] = [
 ];
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [screen, setScreen] = useState<AppScreen>('splash');
+  const [screen, setScreenRaw] = useState<AppScreen>('splash');
+  const [hasOnboarded, setHasOnboarded] = useState(false);
   const [prevScreen, setPrevScreen] = useState<AppScreen>('splash');
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [tab, setTab] = useState<AppTab>('home');
@@ -140,6 +141,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const confettiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const addDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Wrapped setter: automatically marks onboarding done when entering the app
+  const setScreen = useCallback((s: AppScreen) => {
+    if (s === 'app') setHasOnboarded(true);
+    setScreenRaw(s);
+  }, []);
+
   // ── Boot: restore local state + check Supabase session ────────────────────
   useEffect(() => {
     Promise.all([
@@ -149,26 +156,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       getUserProfile(),
       getBudgets(),
     ]).then(([saved, settings, goals, profile, storedBudgets]) => {
-      if (settings.isPro !== undefined) setIsPro(settings.isPro);
-      if (settings.toggles)            setToggles(settings.toggles);
-      if (settings.theme)              setTheme(settings.theme);
-      if (settings.acc)                setAcc(settings.acc);
-      if (settings.xp !== undefined)   setXp(settings.xp);
-      if (settings.streak !== undefined) setStreak(settings.streak);
+      if (settings.isPro !== undefined)    setIsPro(settings.isPro);
+      if (settings.toggles)               setToggles(settings.toggles);
+      if (settings.theme)                 setTheme(settings.theme);
+      if (settings.acc)                   setAcc(settings.acc);
+      if (settings.xp !== undefined)      setXp(settings.xp);
+      if (settings.streak !== undefined)  setStreak(settings.streak);
+      if (settings.hasOnboarded)          setHasOnboarded(true);
 
       if (goals.length > 0) setSavingsGoals(goals);
       if (storedBudgets.length > 0) setBudgetsState(storedBudgets);
 
       if (profile) {
         setUserProfile(profile);
-        setScreen('app');
-      } else if (saved.length > 0) {
-        setTransactions(saved);
+        if (settings.hasOnboarded) setScreen('app');
+      } else if (settings.hasOnboarded) {
+        if (saved.length > 0) setTransactions(saved);
+        else { setTransactions(SEED_TXNS); setXp(720); setStreak(14); }
         setScreen('app');
       } else {
         setTransactions(SEED_TXNS);
         setXp(720);
         setStreak(14);
+        // leave screen = 'splash' so onboarding always shows on first launch
       }
 
       setIsReady(true);
@@ -262,8 +272,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // ── Persist settings locally ───────────────────────────────────────────────
   useEffect(() => {
     if (!isReady) return;
-    saveSettings({ isPro, toggles, theme, acc, xp, streak }).catch(() => {});
-  }, [isPro, toggles, theme, acc, xp, streak, isReady]);
+    saveSettings({ isPro, toggles, theme, acc, xp, streak, hasOnboarded }).catch(() => {});
+  }, [isPro, toggles, theme, acc, xp, streak, hasOnboarded, isReady]);
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const signInUser = useCallback(async (email: string, password: string): Promise<string | null> => {
@@ -327,7 +337,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setXp(720);
     setStreak(14);
     setSavingsGoals([]);
-    setScreen('splash');
+    setHasOnboarded(false);
+    setScreenRaw('splash');
     setOnboardingStep(0);
   }, []);
 
