@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, KeyboardAvoidingView,
@@ -6,6 +6,9 @@ import {
 } from 'react-native';
 import { Sprout } from '../components/Sprout';
 import { useApp } from '../context/AppContext';
+import { isSupabaseConfigured, pingSupabase } from '../lib/supabase';
+
+type ConnStatus = 'checking' | 'ok' | 'offline';
 
 export function AuthScreen() {
   const { setScreen, setTab, setOnboardingStep, signInUser, signUpUser } = useApp();
@@ -16,6 +19,14 @@ export function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
+  const [connStatus, setConnStatus] = useState<ConnStatus>(
+    isSupabaseConfigured ? 'checking' : 'offline'
+  );
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) { setConnStatus('offline'); return; }
+    pingSupabase().then(ok => setConnStatus(ok ? 'ok' : 'offline'));
+  }, []);
 
   const continueAsGuest = () => {
     setOnboardingStep(0);
@@ -45,6 +56,15 @@ export function AuthScreen() {
       return;
     }
 
+    // If Supabase is known offline, save locally and continue
+    if (connStatus === 'offline') {
+      await signUpUser(trimmedEmail, password, trimmedName || trimmedEmail.split('@')[0]);
+      setScreen('app');
+      setTab('home');
+      setOnboardingStep(0);
+      return;
+    }
+
     setLoading(true);
     try {
       if (mode === 'signup') {
@@ -59,7 +79,14 @@ export function AuthScreen() {
           return;
         }
         if (result) {
-          setErrorMsg(result);
+          // Check if it's a connectivity error — re-ping and update status
+          const stillUp = await pingSupabase();
+          if (!stillUp) {
+            setConnStatus('offline');
+            setErrorMsg('Supabase is unreachable. Use "Continue without account" below to save data locally instead.');
+          } else {
+            setErrorMsg(result);
+          }
           return;
         }
         setScreen('app');
@@ -68,7 +95,11 @@ export function AuthScreen() {
       } else {
         const result = await signInUser(trimmedEmail, password);
         if (result) {
-          if (result.toLowerCase().includes('confirm') || result.toLowerCase().includes('verified')) {
+          const stillUp = await pingSupabase();
+          if (!stillUp) {
+            setConnStatus('offline');
+            setErrorMsg('Supabase is unreachable. Use "Continue without account" below to save data locally instead.');
+          } else if (result.toLowerCase().includes('confirm') || result.toLowerCase().includes('verified')) {
             setErrorMsg('Please confirm your email first. Check your inbox for the confirmation link.');
           } else {
             setErrorMsg(result);
@@ -103,22 +134,36 @@ export function AuthScreen() {
             </Text>
           </View>
 
-          {/* Mode toggle */}
-          <View style={s.toggle}>
-            <TouchableOpacity
-              style={[s.toggleBtn, mode === 'signup' && s.toggleActive]}
-              onPress={() => switchMode('signup')}>
-              <Text style={[s.toggleTxt, mode === 'signup' && s.toggleTxtActive]}>Sign Up</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.toggleBtn, mode === 'signin' && s.toggleActive]}
-              onPress={() => switchMode('signin')}>
-              <Text style={[s.toggleTxt, mode === 'signin' && s.toggleTxtActive]}>Sign In</Text>
-            </TouchableOpacity>
-          </View>
+          {/* Connection status pill */}
+          {isSupabaseConfigured && (
+            <View style={[s.connPill, connStatus === 'ok' && s.connOk, connStatus === 'offline' && s.connOffline]}>
+              {connStatus === 'checking'
+                ? <><ActivityIndicator size="small" color="#92400E" style={{ marginRight: 6 }} /><Text style={s.connTxt}>Checking connection…</Text></>
+                : connStatus === 'ok'
+                  ? <Text style={s.connTxt}>● Cloud sync ready</Text>
+                  : <Text style={s.connTxt}>⚠ Cloud unavailable — data will save locally</Text>
+              }
+            </View>
+          )}
+
+          {/* Mode toggle — only shown when Supabase is reachable */}
+          {connStatus !== 'offline' && (
+            <View style={s.toggle}>
+              <TouchableOpacity
+                style={[s.toggleBtn, mode === 'signup' && s.toggleActive]}
+                onPress={() => switchMode('signup')}>
+                <Text style={[s.toggleTxt, mode === 'signup' && s.toggleTxtActive]}>Sign Up</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.toggleBtn, mode === 'signin' && s.toggleActive]}
+                onPress={() => switchMode('signin')}>
+                <Text style={[s.toggleTxt, mode === 'signin' && s.toggleTxtActive]}>Sign In</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={s.form}>
-            {mode === 'signup' && (
+            {(mode === 'signup' || connStatus === 'offline') && (
               <View style={s.field}>
                 <Text style={s.label}>YOUR NAME</Text>
                 <TextInput
@@ -133,34 +178,38 @@ export function AuthScreen() {
               </View>
             )}
 
-            <View style={s.field}>
-              <Text style={s.label}>EMAIL</Text>
-              <TextInput
-                style={s.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                placeholderTextColor="rgba(255,255,255,0.35)"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="next"
-              />
-            </View>
+            {connStatus !== 'offline' && (
+              <>
+                <View style={s.field}>
+                  <Text style={s.label}>EMAIL</Text>
+                  <TextInput
+                    style={s.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="you@example.com"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="next"
+                  />
+                </View>
 
-            <View style={s.field}>
-              <Text style={s.label}>PASSWORD</Text>
-              <TextInput
-                style={s.input}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Min. 6 characters"
-                placeholderTextColor="rgba(255,255,255,0.35)"
-                secureTextEntry
-                returnKeyType="done"
-                onSubmitEditing={handleSubmit}
-              />
-            </View>
+                <View style={s.field}>
+                  <Text style={s.label}>PASSWORD</Text>
+                  <TextInput
+                    style={s.input}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Min. 6 characters"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    secureTextEntry
+                    returnKeyType="done"
+                    onSubmitEditing={handleSubmit}
+                  />
+                </View>
+              </>
+            )}
           </View>
 
           {/* Inline error / info messages */}
@@ -175,17 +224,30 @@ export function AuthScreen() {
             </View>
           ) : null}
 
-          <TouchableOpacity
-            style={[s.cta, loading && { opacity: 0.7 }]}
-            onPress={handleSubmit}
-            activeOpacity={0.85}
-            disabled={loading}>
-            {loading
-              ? <ActivityIndicator color="#1B6E3A" />
-              : <Text style={s.ctaTxt}>
-                  {mode === 'signup' ? 'Create account →' : 'Sign in →'}
-                </Text>}
-          </TouchableOpacity>
+          {connStatus === 'offline' ? (
+            /* Offline — just save name locally and jump in */
+            <TouchableOpacity
+              style={[s.cta, loading && { opacity: 0.7 }]}
+              onPress={handleSubmit}
+              activeOpacity={0.85}
+              disabled={loading}>
+              {loading
+                ? <ActivityIndicator color="#1B6E3A" />
+                : <Text style={s.ctaTxt}>Continue with local account →</Text>}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[s.cta, (loading || connStatus === 'checking') && { opacity: 0.7 }]}
+              onPress={handleSubmit}
+              activeOpacity={0.85}
+              disabled={loading || connStatus === 'checking'}>
+              {loading
+                ? <ActivityIndicator color="#1B6E3A" />
+                : <Text style={s.ctaTxt}>
+                    {mode === 'signup' ? 'Create account →' : 'Sign in →'}
+                  </Text>}
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity style={s.guestBtn} onPress={continueAsGuest}>
             <Text style={s.guestTxt}>Continue as guest</Text>
@@ -203,11 +265,20 @@ export function AuthScreen() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#1B6E3A' },
-  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40, gap: 20 },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40, gap: 16 },
 
   hero: { alignItems: 'center', gap: 6, paddingVertical: 8 },
   brand: { color: '#fff', fontSize: 30, fontWeight: '900', letterSpacing: -1 },
   sub: { color: 'rgba(255,255,255,0.7)', fontSize: 15, fontWeight: '600' },
+
+  connPill: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 99,
+    paddingHorizontal: 14, paddingVertical: 8,
+  },
+  connOk: { backgroundColor: 'rgba(198,241,53,0.15)' },
+  connOffline: { backgroundColor: 'rgba(251,191,36,0.2)' },
+  connTxt: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '700' },
 
   toggle: {
     flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.2)',

@@ -28,4 +28,19 @@ export function getSupabase(): SupabaseClient | null {
   return _client;
 }
 
+export const SUPABASE_URL_PUBLIC = SUPABASE_URL;
+
+export async function pingSupabase(): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/settings`, {
+      headers: { apikey: SUPABASE_ANON_KEY },
+      signal: AbortSignal.timeout(6000),
+    });
+    return res.ok || res.status === 401;
+  } catch {
+    return false;
+  }
+}
+
 export type { Session, User };
