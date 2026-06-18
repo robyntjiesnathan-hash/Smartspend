@@ -7,6 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "primaryColor": "#1B6E3A",
 
     "splash": {
       "image": "./assets/splash.png",
@@ -20,10 +21,15 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.smartspend.app",
       "buildNumber": "1",
+      "deploymentTarget": "16.0",
       "infoPlist": {
         "NSUserNotificationUsageDescription": "SmartSpend sends daily reminders to help you log spending and keep your streak alive.",
         "ITSAppUsesNonExemptEncryption": false,
-        "UIRequiresFullScreen": true
+        "UIRequiresFullScreen": true,
+        "NSFaceIDUsageDescription": "Use Face ID to securely access your SmartSpend account."
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
 

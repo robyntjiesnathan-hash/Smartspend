@@ -30,27 +30,24 @@ SmartSpend is a personal finance tracking tool that helps you log expenses, set 
 Nothing in SmartSpend constitutes financial, investment, tax, or legal advice. Always consult a qualified professional before making financial decisions.
 
 4. YOUR DATA
-All transaction data, budgets, and settings are stored locally on your device. SmartSpend does not upload your financial data to any external server.
+Guest users store all data locally on their device. Users who create an account have their data securely synced to our cloud database (Supabase) to enable access across devices. You may delete your account and all associated data at any time by contacting us.
 
 5. SUBSCRIPTIONS
-SmartSpend Pro is available as a monthly ($11.99/mo) or yearly ($59.99/yr) subscription. Subscriptions automatically renew unless cancelled at least 24 hours before the renewal date. Manage or cancel subscriptions through your App Store or Google Play account settings.
+SmartSpend offers a free tier and may offer a Pro subscription in future. Any subscription terms will be displayed clearly before purchase. Subscriptions automatically renew unless cancelled at least 24 hours before the renewal date through your App Store account settings.
 
-6. FREE TRIAL
-Yearly plans include a 7-day free trial for new subscribers. You will not be charged during the trial period. Cancel before the trial ends to avoid being billed.
+6. REFUNDS
+Refund requests are handled by Apple in accordance with their refund policy.
 
-7. REFUNDS
-Refund requests are handled by Apple or Google in accordance with their respective refund policies.
-
-8. ACCEPTABLE USE
+7. ACCEPTABLE USE
 You agree not to reverse-engineer, copy, modify, or distribute any part of the app.
 
-9. LIMITATION OF LIABILITY
+8. LIMITATION OF LIABILITY
 To the fullest extent permitted by law, SmartSpend and its developers are not liable for any indirect, incidental, special, or consequential damages arising from your use of the app.
 
-10. CHANGES TO TERMS
+9. CHANGES TO TERMS
 We may update these terms at any time. Continued use of the app after changes constitutes your acceptance of the updated terms.
 
-11. CONTACT
+10. CONTACT
 questions@smartspend.app`,
   },
   privacy: {
@@ -58,35 +55,42 @@ questions@smartspend.app`,
     body: `Last updated: June 2026
 
 1. OVERVIEW
-SmartSpend is designed with privacy first. We collect as little data as possible and store it locally on your device.
+SmartSpend is designed with privacy first. We collect only what is necessary to provide the service.
 
-2. DATA WE STORE LOCALLY
-• Transaction records you enter (amount, category, note, date)
-• Budget preferences and spending targets
-• App settings (theme, accessories, notification preferences)
-• XP, streak, and level progress
+2. DATA WE COLLECT
 
-All of the above is stored using AsyncStorage on your device only. It is never transmitted to our servers.
+Guest users (no account):
+• All data is stored locally on your device using AsyncStorage only.
+• Nothing is transmitted to our servers.
 
-3. PAYMENT PROCESSING
-If you subscribe to SmartSpend Pro, payments are processed securely by Apple (App Store) or Google (Google Play). We use RevenueCat to manage subscription status. RevenueCat may collect anonymised purchase data as described at revenuecat.com/privacy. We do not receive or store your payment card details.
+Users with an account:
+• Your email address, used to identify your account.
+• Financial data you enter: transactions, budgets, and savings goals.
+• App preferences: theme, settings, XP and streak progress.
+• This data is stored securely in our cloud database (Supabase) to enable sync across devices.
 
-4. PUSH NOTIFICATIONS
-If you enable notifications, reminders are scheduled locally on your device using the operating system's notification scheduler. No data is sent to external servers to deliver these notifications.
+3. HOW WE USE YOUR DATA
+We use your data solely to provide the SmartSpend service. We do not sell, share, or use your data for advertising or analytics.
 
-5. ANALYTICS & ADVERTISING
-SmartSpend contains no third-party analytics SDKs, advertising networks, or tracking pixels. We do not track your behaviour across apps or websites.
+4. DATA STORAGE & SECURITY
+Account data is stored in Supabase, a secure cloud database with row-level security ensuring you can only access your own data. All data is transmitted over HTTPS.
 
-6. CHILDREN
+5. DATA DELETION
+You can delete your account and all associated data at any time by contacting privacy@smartspend.app. Guest data can be deleted by clearing app data in your device settings or uninstalling the app.
+
+6. PUSH NOTIFICATIONS
+Reminders are scheduled locally on your device. No notification data is sent to external servers.
+
+7. ANALYTICS & ADVERTISING
+SmartSpend contains no third-party analytics SDKs, advertising networks, or tracking pixels.
+
+8. CHILDREN
 SmartSpend is not directed at children under the age of 13. We do not knowingly collect personal information from children.
 
-7. DATA RETENTION & DELETION
-Because all data is stored locally, you can delete it at any time by clearing the app's data in your device settings or by uninstalling the app.
+9. CHANGES TO THIS POLICY
+We may update this Privacy Policy from time to time. The date at the top of this document reflects the latest revision.
 
-8. CHANGES TO THIS POLICY
-We may update this Privacy Policy from time to time. We will note the date of the last update at the top of this document.
-
-9. CONTACT
+10. CONTACT
 privacy@smartspend.app`,
   },
 };
