@@ -3,26 +3,68 @@
     "name": "SmartSpend",
     "slug": "smartspend",
     "version": "1.0.0",
+    "scheme": "smartspend",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2E7D32"
+      "backgroundColor": "#1B6E3A"
     },
+
     "assetBundlePatterns": ["**/*"],
+
     "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#2E7D32"
+      "supportsTablet": false,
+      "bundleIdentifier": "com.smartspend.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSUserNotificationUsageDescription": "SmartSpend sends daily reminders to help you log spending and keep your streak alive.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIRequiresFullScreen": true
       }
     },
+
+    "android": {
+      "package": "com.smartspend.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1B6E3A"
+      },
+      "permissions": [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
+
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "SmartSpend",
+      "shortName": "SmartSpend",
+      "description": "Grow strong money habits every day",
+      "themeColor": "#1B6E3A",
+      "backgroundColor": "#F2FAF4"
+    },
+
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1B6E3A",
+          "sounds": []
+        }
+      ]
+    ],
+
+    "extra": {
+      "eas": {
+        "projectId": "REPLACE_WITH_YOUR_EAS_PROJECT_ID"
+      }
     }
   }
 }

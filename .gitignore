@@ -4,3 +4,15 @@ dist/
 .claude/
 *.log
 .DS_Store
+
+# Environment — copy .env.example, fill in real values, never commit .env
+.env
+.env.local
+.env.production
+
+# Store credentials — never commit these
+google-play-key.json
+*.p8
+*.p12
+*.mobileprovision
+AuthKey_*.p8

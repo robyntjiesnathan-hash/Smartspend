@@ -42,13 +42,26 @@ export const ACCESSORIES = [
 ];
 
 export const LEVELS = [
-  { lvl: 1,  name: 'Money Beginner',   xp: 0 },
-  { lvl: 2,  name: 'Budget Starter',   xp: 150 },
-  { lvl: 3,  name: 'Expense Tracker',  xp: 350 },
-  { lvl: 4,  name: 'Smart Saver',      xp: 600 },
-  { lvl: 5,  name: 'Budget Builder',   xp: 900 },
-  { lvl: 10, name: 'Financial Planner',xp: 2500 },
-  { lvl: 20, name: 'Money Master',     xp: 8000 },
+  { lvl: 1,  name: 'Money Beginner',    xp: 0 },
+  { lvl: 2,  name: 'Budget Starter',    xp: 150 },
+  { lvl: 3,  name: 'Expense Tracker',   xp: 350 },
+  { lvl: 4,  name: 'Smart Saver',       xp: 600 },
+  { lvl: 5,  name: 'Budget Builder',    xp: 900 },
+  { lvl: 6,  name: 'Frugal Fox',        xp: 1200 },
+  { lvl: 7,  name: 'Thrift Champion',   xp: 1600 },
+  { lvl: 8,  name: 'Nest Egg Ninja',    xp: 2000 },
+  { lvl: 9,  name: 'Savings Sage',      xp: 2200 },
+  { lvl: 10, name: 'Financial Planner', xp: 2500 },
+  { lvl: 11, name: 'Wealth Scout',      xp: 3000 },
+  { lvl: 12, name: 'Dollar Dynamo',     xp: 3600 },
+  { lvl: 13, name: 'Budget Wizard',     xp: 4200 },
+  { lvl: 14, name: 'Penny Powerhouse',  xp: 4900 },
+  { lvl: 15, name: 'Prosperity Pro',    xp: 5700 },
+  { lvl: 16, name: 'Capital Crafter',   xp: 6500 },
+  { lvl: 17, name: 'Wealth Strategist', xp: 7000 },
+  { lvl: 18, name: 'Finance Guru',      xp: 7400 },
+  { lvl: 19, name: 'Money Mentor',      xp: 7700 },
+  { lvl: 20, name: 'Money Master',      xp: 8000 },
 ];
 
 export const TIPS = [
@@ -73,14 +86,19 @@ export const BUDGETS_DATA = [
   { cat: 'Health',        spent: 280, limit: 350, col: '#7B5CF5', icon: '❤️' },
 ];
 
-export const TXNS = [
-  { label: 'Whole Foods Market', amount: -86,   cat: 'Groceries',     icon: '🛒', date: 'Today' },
-  { label: 'Salary',             amount: 7125,  cat: 'Income',        icon: '💳', date: 'Today' },
-  { label: 'Netflix',            amount: -18,   cat: 'Entertainment', icon: '🎬', date: 'Yesterday' },
-  { label: 'Gas Station',        amount: -65,   cat: 'Transport',     icon: '⛽', date: 'Yesterday' },
-  { label: 'Freelance',          amount: 1125,  cat: 'Income',        icon: '💰', date: 'Mon' },
-  { label: 'Health Insurance',   amount: -280,  cat: 'Health',        icon: '❤️', date: 'Mon' },
-];
+export const CAT_ICON: Record<string, string> = {
+  Groceries: '🛒', Transport: '🚗', Entertainment: '🎬',
+  'Dining Out': '🍽️', Health: '❤️', Shopping: '🛍️',
+  Bills: '📄', Other: '📝', Income: '💰',
+};
+
+export function fmtDate(d: string, weekday: 'short' | 'long' = 'long'): string {
+  const today = new Date().toISOString().split('T')[0];
+  const yest = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  if (d === today) return 'Today';
+  if (d === yest) return 'Yesterday';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday, month: 'short', day: 'numeric' });
+}
 
 export const ACHS = [
   { icon: '🏆', title: 'First Budget',  desc: 'Created first budget',   xp: 50,  done: true },
@@ -130,7 +148,8 @@ export const FREE_VS_PRO = [
   { feat: 'Challenges & streaks', free: false, note: 'Pro only' },
 ];
 
-export const fmt = (n: number) => '$' + Math.abs(n).toLocaleString('en-US');
+const _nf = new Intl.NumberFormat('en-US');
+export const fmt = (n: number) => '$' + _nf.format(Math.abs(n));
 export const pct = (a: number, b: number) => Math.min(100, Math.round((a / b) * 100));
 
 export function getLvl(xp: number) {

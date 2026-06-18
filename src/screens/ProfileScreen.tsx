@@ -1,25 +1,183 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert,
+  Platform, Modal, Linking, SafeAreaView, TextInput,
+} from 'react-native';
 import { Sprout } from '../components/Sprout';
 import { useApp } from '../context/AppContext';
 import { THEMES, ACCESSORIES, P, getLvl } from '../data/constants';
+import {
+  requestNotifPermission,
+  scheduleDailyReminder,
+  scheduleWeeklySummary,
+  scheduleStreakAlert,
+  scheduleMascotTip,
+  cancelNotif,
+} from '../utils/notifications';
+
+const LEGAL: Record<'tos' | 'privacy', { title: string; body: string }> = {
+  tos: {
+    title: 'Terms of Service',
+    body: `Last updated: June 2026
+
+1. ACCEPTANCE
+By downloading or using SmartSpend you agree to these Terms of Service. If you do not agree, do not use the app.
+
+2. DESCRIPTION OF SERVICE
+SmartSpend is a personal finance tracking tool that helps you log expenses, set budgets, and build healthy money habits. It is provided for informational and personal organisational purposes only.
+
+3. NO FINANCIAL ADVICE
+Nothing in SmartSpend constitutes financial, investment, tax, or legal advice. Always consult a qualified professional before making financial decisions.
+
+4. YOUR DATA
+All transaction data, budgets, and settings are stored locally on your device. SmartSpend does not upload your financial data to any external server.
+
+5. SUBSCRIPTIONS
+SmartSpend Pro is available as a monthly ($11.99/mo) or yearly ($59.99/yr) subscription. Subscriptions automatically renew unless cancelled at least 24 hours before the renewal date. Manage or cancel subscriptions through your App Store or Google Play account settings.
+
+6. FREE TRIAL
+Yearly plans include a 7-day free trial for new subscribers. You will not be charged during the trial period. Cancel before the trial ends to avoid being billed.
+
+7. REFUNDS
+Refund requests are handled by Apple or Google in accordance with their respective refund policies.
+
+8. ACCEPTABLE USE
+You agree not to reverse-engineer, copy, modify, or distribute any part of the app.
+
+9. LIMITATION OF LIABILITY
+To the fullest extent permitted by law, SmartSpend and its developers are not liable for any indirect, incidental, special, or consequential damages arising from your use of the app.
+
+10. CHANGES TO TERMS
+We may update these terms at any time. Continued use of the app after changes constitutes your acceptance of the updated terms.
+
+11. CONTACT
+questions@smartspend.app`,
+  },
+  privacy: {
+    title: 'Privacy Policy',
+    body: `Last updated: June 2026
+
+1. OVERVIEW
+SmartSpend is designed with privacy first. We collect as little data as possible and store it locally on your device.
+
+2. DATA WE STORE LOCALLY
+• Transaction records you enter (amount, category, note, date)
+• Budget preferences and spending targets
+• App settings (theme, accessories, notification preferences)
+• XP, streak, and level progress
+
+All of the above is stored using AsyncStorage on your device only. It is never transmitted to our servers.
+
+3. PAYMENT PROCESSING
+If you subscribe to SmartSpend Pro, payments are processed securely by Apple (App Store) or Google (Google Play). We use RevenueCat to manage subscription status. RevenueCat may collect anonymised purchase data as described at revenuecat.com/privacy. We do not receive or store your payment card details.
+
+4. PUSH NOTIFICATIONS
+If you enable notifications, reminders are scheduled locally on your device using the operating system's notification scheduler. No data is sent to external servers to deliver these notifications.
+
+5. ANALYTICS & ADVERTISING
+SmartSpend contains no third-party analytics SDKs, advertising networks, or tracking pixels. We do not track your behaviour across apps or websites.
+
+6. CHILDREN
+SmartSpend is not directed at children under the age of 13. We do not knowingly collect personal information from children.
+
+7. DATA RETENTION & DELETION
+Because all data is stored locally, you can delete it at any time by clearing the app's data in your device settings or by uninstalling the app.
+
+8. CHANGES TO THIS POLICY
+We may update this Privacy Policy from time to time. We will note the date of the last update at the top of this document.
+
+9. CONTACT
+privacy@smartspend.app`,
+  },
+};
 
 export function ProfileScreen() {
   const {
     xp, streak, isPro, mood, acc, setAcc, theme, setTheme,
     rewardTab, setRewardTab, profTab, setProfTab,
-    toggles, setToggles, setScreen,
+    toggles, setToggles, setScreen, userProfile, signOutUser, updateDisplayName,
   } = useApp();
+  const [notifIds, setNotifIds] = useState<(string | null)[]>([null, null, null, null]);
+  const [legalModal, setLegalModal] = useState<null | 'tos' | 'privacy'>(null);
+  const [editName, setEditName] = useState(false);
+  const [nameInput, setNameInput] = useState(userProfile?.displayName || '');
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+
+  const NOTIF_SCHEDULERS = [
+    scheduleDailyReminder,
+    scheduleWeeklySummary,
+    scheduleStreakAlert,
+    scheduleMascotTip,
+  ];
+
+  const handleToggle = async (idx: number) => {
+    const enabling = !toggles[idx];
+
+    if (Platform.OS === 'web') {
+      // On web just flip the preference — no native notification scheduling
+      setToggles(t => { const n = [...t]; n[idx] = enabling; return n; });
+      return;
+    }
+
+    if (enabling) {
+      const granted = await requestNotifPermission();
+      if (!granted) {
+        Alert.alert(
+          'Notifications blocked',
+          'Enable notifications in your device Settings to use this feature.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      const id = await NOTIF_SCHEDULERS[idx]();
+      setNotifIds(prev => { const n = [...prev]; n[idx] = id; return n; });
+    } else {
+      if (notifIds[idx]) await cancelNotif(notifIds[idx]!);
+      setNotifIds(prev => { const n = [...prev]; n[idx] = null; return n; });
+    }
+    setToggles(t => { const n = [...t]; n[idx] = enabling; return n; });
+  };
   const { c } = getLvl(xp);
 
   return (
+    <>
     <ScrollView style={{ flex: 1, backgroundColor: P.bg }} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={[s.header, { backgroundColor: P.greenDeep }]}>
         <View style={{ alignItems: 'center', marginBottom: 8 }}>
           <Sprout lvl={c.lvl} size={110} mood={mood} acc={acc} />
         </View>
-        <Text style={s.name}>Your Account</Text>
+        {editName ? (
+          <View style={s.editNameRow}>
+            <TextInput
+              style={s.nameInput}
+              value={nameInput}
+              onChangeText={setNameInput}
+              placeholder="Your name"
+              placeholderTextColor="rgba(255,255,255,0.4)"
+              autoFocus
+              onSubmitEditing={() => {
+                if (nameInput.trim()) updateDisplayName(nameInput.trim());
+                setEditName(false);
+              }}
+            />
+            <TouchableOpacity
+              style={s.nameSaveBtn}
+              onPress={() => {
+                if (nameInput.trim()) updateDisplayName(nameInput.trim());
+                setEditName(false);
+              }}>
+              <Text style={s.nameSaveTxt}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={() => { setNameInput(userProfile?.displayName || ''); setEditName(true); }}>
+            <Text style={s.name}>{userProfile?.displayName || 'Your Account'} ✏️</Text>
+          </TouchableOpacity>
+        )}
+        {userProfile?.email ? (
+          <Text style={s.email}>{userProfile.email}</Text>
+        ) : null}
         <Text style={s.sub}>Level {c.lvl} · {c.name} · {xp} XP</Text>
         <View style={s.badgeRow}>
           <View style={s.badge}><Text style={s.badgeTxt}>🔥 {streak}-day streak</Text></View>
@@ -118,9 +276,10 @@ export function ProfileScreen() {
                   <Text style={s.settingSub}>{item.s}</Text>
                 </View>
                 <TouchableOpacity
-                  style={[s.toggle, { backgroundColor: toggles[idx] ? P.green : '#CBD5CB' }]}
-                  onPress={() => setToggles(t => { const n = [...t]; n[idx] = !n[idx]; return n; })}>
-                  <View style={[s.toggleThumb, { left: toggles[idx] ? 20 : 2 }]} />
+                  style={[s.toggle, { backgroundColor: toggles[idx] ? P.green : '#C4CFC4' }]}
+                  onPress={() => handleToggle(idx)}
+                  activeOpacity={0.8}>
+                  <View style={[s.toggleThumb, { left: toggles[idx] ? 24 : 3 }]} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -131,30 +290,117 @@ export function ProfileScreen() {
               </TouchableOpacity>
             )}
 
+            {userProfile && !confirmSignOut && (
+              <TouchableOpacity style={s.signOutBtn} onPress={() => setConfirmSignOut(true)}>
+                <Text style={s.signOutTxt}>Sign out</Text>
+              </TouchableOpacity>
+            )}
+            {userProfile && confirmSignOut && (
+              <View style={s.signOutConfirm}>
+                <Text style={s.signOutConfirmTxt}>Are you sure you want to sign out?</Text>
+                <View style={s.signOutConfirmRow}>
+                  <TouchableOpacity style={s.signOutCancelBtn} onPress={() => setConfirmSignOut(false)}>
+                    <Text style={s.signOutCancelTxt}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={s.signOutConfirmBtn} onPress={() => { setConfirmSignOut(false); signOutUser(); }}>
+                    <Text style={s.signOutConfirmBtnTxt}>Yes, sign out</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             <Text style={[s.sectionLabel, { marginTop: 16 }]}>ABOUT</Text>
             {[
-              { i: '📋', l: 'Terms of Service' },
-              { i: '🔒', l: 'Privacy Policy' },
-              { i: '💬', l: 'Send feedback' },
-              { i: '⭐', l: 'Rate SmartSpend' },
+              {
+                i: '📋', l: 'Terms of Service',
+                onPress: () => setLegalModal('tos'),
+              },
+              {
+                i: '🔒', l: 'Privacy Policy',
+                onPress: () => setLegalModal('privacy'),
+              },
+              {
+                i: '💬', l: 'Send feedback',
+                onPress: () => Linking.openURL(
+                  'mailto:support@smartspend.app?subject=SmartSpend%20Feedback&body=Hi%20SmartSpend%20team%2C%0A%0A'
+                ).catch(() => Alert.alert('No email app found', 'Please email us at support@smartspend.app')),
+              },
+              {
+                i: '⭐', l: 'Rate SmartSpend',
+                onPress: () => {
+                  const url = Platform.OS === 'ios'
+                    ? 'https://apps.apple.com/app/smartspend'
+                    : 'https://play.google.com/store/apps/details?id=com.smartspend.app';
+                  Linking.openURL(url).catch(() =>
+                    Alert.alert('Coming soon', 'Rating will be available once SmartSpend is live on the store.')
+                  );
+                },
+              },
             ].map(m => (
-              <View key={m.l} style={s.aboutRow}>
+              <TouchableOpacity key={m.l} style={s.aboutRow} onPress={m.onPress} activeOpacity={0.7}>
                 <Text style={{ fontSize: 18 }}>{m.i}</Text>
                 <Text style={s.aboutLabel}>{m.l}</Text>
                 <Text style={{ color: '#6B8F6B', fontSize: 16 }}>›</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </>
         )}
       </View>
     </ScrollView>
+
+    {/* ── Legal modal (ToS / Privacy Policy) ── */}
+    <Modal
+      visible={legalModal !== null}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => setLegalModal(null)}>
+      <SafeAreaView style={m.safe}>
+        {legalModal && (
+          <>
+            <View style={m.modalHeader}>
+              <Text style={m.modalTitle}>{LEGAL[legalModal].title}</Text>
+              <TouchableOpacity style={m.closeBtn} onPress={() => setLegalModal(null)} activeOpacity={0.7}>
+                <Text style={m.closeTxt}>✕ Close</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={m.modalBody} showsVerticalScrollIndicator={false}>
+              <Text style={m.bodyTxt}>{LEGAL[legalModal].body}</Text>
+            </ScrollView>
+          </>
+        )}
+      </SafeAreaView>
+    </Modal>
+    </>
   );
 }
 
 const s = StyleSheet.create({
   header: { padding: 20, paddingTop: 24, alignItems: 'center' },
-  name: { color: '#fff', fontSize: 22, fontWeight: '900', marginBottom: 4 },
+  name: { color: '#fff', fontSize: 22, fontWeight: '900', marginBottom: 2, textAlign: 'center' },
+  email: { color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: '600', marginBottom: 4 },
+  editNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  nameInput: {
+    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8,
+    color: '#fff', fontSize: 18, fontWeight: '700', minWidth: 140,
+  },
+  nameSaveBtn: { backgroundColor: '#C6F135', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  nameSaveTxt: { color: '#145229', fontSize: 13, fontWeight: '900' },
   sub: { color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: '700', marginBottom: 12 },
+  signOutBtn: {
+    backgroundColor: '#FEF2F2', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 8,
+    borderWidth: 1, borderColor: '#FECACA',
+  },
+  signOutTxt: { color: '#EF4444', fontSize: 14, fontWeight: '800' },
+  signOutConfirm: {
+    backgroundColor: '#FEF2F2', borderRadius: 14, padding: 16, marginTop: 8,
+    borderWidth: 1, borderColor: '#FECACA', gap: 12,
+  },
+  signOutConfirmTxt: { color: '#7F1D1D', fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  signOutConfirmRow: { flexDirection: 'row', gap: 10 },
+  signOutCancelBtn: { flex: 1, backgroundColor: '#fff', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: 1, borderColor: '#FECACA' },
+  signOutCancelTxt: { color: '#6B7280', fontSize: 13, fontWeight: '800' },
+  signOutConfirmBtn: { flex: 1, backgroundColor: '#EF4444', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  signOutConfirmBtnTxt: { color: '#fff', fontSize: 13, fontWeight: '900' },
   badgeRow: { flexDirection: 'row', gap: 10 },
   badge: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 },
   proBadge: { backgroundColor: '#C6F135' },
@@ -200,11 +446,11 @@ const s = StyleSheet.create({
   },
   settingTitle: { fontWeight: '800', fontSize: 13, color: '#111C11', marginBottom: 2 },
   settingSub: { color: '#6B8F6B', fontSize: 11, fontWeight: '600' },
-  toggle: { width: 42, height: 24, borderRadius: 99, position: 'relative' },
+  toggle: { width: 50, height: 28, borderRadius: 99, position: 'relative', justifyContent: 'center' },
   toggleThumb: {
-    width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff',
-    position: 'absolute', top: 2,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2,
+    width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
+    position: 'absolute', top: 3,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3, elevation: 3,
   },
   upgradeBtn: {
     backgroundColor: '#111C11', borderRadius: 16, paddingVertical: 14,
@@ -218,4 +464,22 @@ const s = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
   },
   aboutLabel: { flex: 1, fontWeight: '800', fontSize: 13, color: '#111C11' },
+});
+
+const m = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F2FAF4' },
+  modalHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 16,
+    borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.07)',
+    backgroundColor: '#fff',
+  },
+  modalTitle: { fontSize: 17, fontWeight: '900', color: '#111C11' },
+  closeBtn: {
+    backgroundColor: '#F2FAF4', borderRadius: 99,
+    paddingHorizontal: 14, paddingVertical: 7,
+  },
+  closeTxt: { fontSize: 13, fontWeight: '800', color: '#1B6E3A' },
+  modalBody: { padding: 22, paddingBottom: 48 },
+  bodyTxt: { fontSize: 14, fontWeight: '500', color: '#2B4A2B', lineHeight: 22 },
 });

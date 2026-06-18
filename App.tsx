@@ -7,6 +7,7 @@ import { AppProvider, useApp } from './src/context/AppContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { PaywallScreen } from './src/screens/PaywallScreen';
+import { AuthScreen } from './src/screens/AuthScreen';
 import { P } from './src/data/constants';
 
 function Confetti() {
@@ -22,7 +23,7 @@ function Confetti() {
   );
 }
 
-function FallingPiece({ col, left, delay }: { col: string; left: string; delay: number }) {
+function FallingPiece({ col, left, delay }: { col: string; left: `${number}%`; delay: number }) {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     setTimeout(() => {
@@ -85,13 +86,24 @@ function ChallengeModal() {
   );
 }
 
+function LoadingScreen() {
+  return (
+    <View style={{ flex: 1, backgroundColor: P.green, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: 40, marginBottom: 12 }}>🌱</Text>
+      <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }}>SmartSpend</Text>
+    </View>
+  );
+}
+
 function Root() {
-  const { screen } = useApp();
+  const { isReady, screen } = useApp();
+  if (!isReady) return <LoadingScreen />;
   if (screen === 'splash') return <SplashScreen />;
+  if (screen === 'auth') return <AuthScreen />;
   if (screen === 'paywall') return <PaywallScreen />;
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: P.bg }}>
-      <View style={{ flex: 1, maxWidth: 390, width: '100%', alignSelf: 'center' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: P.bg, alignItems: 'center' }}>
+      <View style={{ flex: 1, width: '100%', maxWidth: 390 }}>
         <AppNavigator />
         <LevelUpModal />
         <ChallengeModal />

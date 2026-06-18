@@ -1,25 +1,38 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { Sprout } from '../components/Sprout';
 import { Ring } from '../components/Ring';
 import { useApp } from '../context/AppContext';
-import { QUESTS, TXNS, TIPS, THEMES, P, getLvl, fmt, pct } from '../data/constants';
+import { QUESTS, TIPS, THEMES, P, getLvl, fmt, pct, CAT_ICON, fmtDate } from '../data/constants';
 
 export function HomeScreen() {
-  const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go } = useApp();
-  const th = THEMES.find(t => t.id === theme) || THEMES[0];
-  const { c, p: lvlPct, inn, inn2 } = getLvl(xp);
+  const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go, transactions, userProfile, savingsGoals } = useApp();
+  const th = useMemo(() => THEMES.find(t => t.id === theme) || THEMES[0], [theme]);
+  const { c, p: lvlPct, inn, inn2 } = useMemo(() => getLvl(xp), [xp]);
   const tip = TIPS[tipIdx % TIPS.length];
   const health = 82;
 
-  const today = new Date();
-  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const strip = [-2, -1, 0, 1, 2, 3].map(off => {
-    const d = new Date(today); d.setDate(today.getDate() + off);
-    return { d: DAY_NAMES[d.getDay()], n: d.getDate(), t: off === 0 };
-  });
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  }, []);
+
+  const balance = useMemo(
+    () => transactions.reduce((sum, t) => t.type === 'income' ? sum + t.amount : sum - t.amount, 0),
+    [transactions],
+  );
+  const balanceFmt = (balance < 0 ? '-' : '') + fmt(Math.abs(balance));
+
+  const strip = useMemo(() => {
+    const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const today = new Date();
+    return [-2, -1, 0, 1, 2, 3].map(off => {
+      const d = new Date(today); d.setDate(today.getDate() + off);
+      return { d: DAY_NAMES[d.getDay()], n: d.getDate(), t: off === 0 };
+    });
+  }, []);
 
   const qaItems = [
     { label: 'Log expense', sub: 'Track a spend',       icon: '📝', bg: th.primary,  tc: '#fff',         a: 'log' },
@@ -41,7 +54,7 @@ export function HomeScreen() {
       <View style={[s.header, { backgroundColor: th.primary }]}>
         <View style={s.headerTop}>
           <View>
-            <Text style={s.headerSub}>Good morning</Text>
+            <Text style={s.headerSub}>{greeting}{userProfile ? `, ${userProfile.displayName.split(' ')[0]}` : ''}</Text>
             <Text style={s.headerTitle}>SmartSpend</Text>
           </View>
           <View style={{ alignItems: 'flex-end', gap: 5 }}>
@@ -69,7 +82,7 @@ export function HomeScreen() {
 
         {/* Stats */}
         <View style={s.statsRow}>
-          {[{ l: 'Balance', v: '$4,610' }, { l: 'Streak', v: `🔥 ${streak}d` }, { l: 'Health', v: `${health}/100` }].map(stat => (
+          {[{ l: 'Balance', v: balanceFmt }, { l: 'Streak', v: `🔥 ${streak}d` }, { l: 'Health', v: `${health}/100` }].map(stat => (
             <View key={stat.l} style={s.statBox}>
               <Text style={s.statLabel}>{stat.l}</Text>
               <Text style={s.statVal}>{stat.v}</Text>
@@ -125,6 +138,8 @@ export function HomeScreen() {
               onPress={() => {
                 if (q.a === 'rewards') { go('profile'); return; }
                 if (q.a === 'gopro') { setScreen('paywall'); return; }
+                if (q.a === 'goal') { go('savings'); return; }
+                if (q.a === 'income') { go('add'); return; }
                 go('add');
               }}>
               <Text style={{ fontSize: 24, marginBottom: 8 }}>{q.icon}</Text>
@@ -134,46 +149,68 @@ export function HomeScreen() {
           ))}
         </View>
 
-        {/* Quests */}
-        <Text style={[s.sectionLabel, { marginBottom: 10, marginTop: 6 }]}>ACTIVE QUESTS</Text>
-        {QUESTS.map(q => {
-          const pc = pct(q.saved, q.target);
+        {/* Savings Goals */}
+        <View style={[s.sectionHeader, { marginTop: 6 }]}>
+          <Text style={s.sectionLabel}>SAVINGS GOALS</Text>
+          <TouchableOpacity style={s.weeklyBtn} onPress={() => go('savings')}>
+            <Text style={s.weeklyTxt}>{savingsGoals.length ? 'View all' : 'Add goal'}</Text>
+          </TouchableOpacity>
+        </View>
+        {savingsGoals.length === 0 ? (
+          <TouchableOpacity style={s.emptyGoals} onPress={() => go('savings')} activeOpacity={0.8}>
+            <Text style={{ fontSize: 24, marginBottom: 6 }}>🎯</Text>
+            <Text style={s.emptyGoalsTxt}>Create your first savings goal</Text>
+          </TouchableOpacity>
+        ) : savingsGoals.slice(0, 3).map(q => {
+          const pc = pct(q.savedAmount, q.targetAmount);
           return (
             <View key={q.id} style={s.questCard}>
-              <Ring pct={pc} sz={50} sw={5} col={q.col} bg={q.colL}>
+              <Ring pct={pc} sz={50} sw={5} col={q.color} bg={q.colorLight}>
                 <Text style={{ fontSize: 16 }}>{q.emoji}</Text>
               </Ring>
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <View style={s.questTitleRow}>
                   <Text style={s.questTitle}>{q.title}</Text>
-                  <View style={[s.badge, { backgroundColor: q.colL }]}>
-                    <Text style={[s.badgeTxt, { color: q.colD }]}>{pc}%</Text>
+                  <View style={[s.badge, { backgroundColor: q.colorLight }]}>
+                    <Text style={[s.badgeTxt, { color: q.colorDark }]}>{pc}%</Text>
                   </View>
                 </View>
-                <Text style={s.questAmt}>{fmt(q.saved)} / {fmt(q.target)}</Text>
+                <Text style={s.questAmt}>{fmt(q.savedAmount)} / {fmt(q.targetAmount)}</Text>
                 <View style={s.progressBg}>
-                  <View style={[s.progressFill, { width: `${pc}%`, backgroundColor: q.col }]} />
+                  <View style={[s.progressFill, { width: `${pc}%`, backgroundColor: q.color }]} />
                 </View>
-                {pc >= 70 && <Text style={[s.questAlmost, { color: q.col }]}>{pc}% done — almost there!</Text>}
+                {pc >= 70 && pc < 100 && <Text style={[s.questAlmost, { color: q.color }]}>{pc}% done — almost there!</Text>}
+                {pc >= 100 && <Text style={[s.questAlmost, { color: q.color }]}>🎉 Goal reached!</Text>}
               </View>
             </View>
           );
         })}
 
         {/* Recent transactions */}
-        <Text style={[s.sectionLabel, { marginTop: 14, marginBottom: 10 }]}>RECENT TRANSACTIONS</Text>
+        <View style={[s.sectionHeader, { marginTop: 14, marginBottom: 10 }]}>
+          <Text style={s.sectionLabel}>RECENT TRANSACTIONS</Text>
+          <TouchableOpacity style={s.weeklyBtn} onPress={() => go('transactions')}>
+            <Text style={s.weeklyTxt}>View all</Text>
+          </TouchableOpacity>
+        </View>
         <View style={s.txnCard}>
-          {TXNS.slice(0, 5).map((tx, i) => (
-            <View key={tx.label} style={[s.txnRow, i < 4 && s.txnBorder]}>
-              <View style={[s.txnIcon, { backgroundColor: tx.amount > 0 ? '#DCF5E7' : '#F5F5F5' }]}>
-                <Text style={{ fontSize: 16 }}>{tx.icon}</Text>
+          {transactions.length === 0 ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ fontSize: 32, marginBottom: 8 }}>📝</Text>
+              <Text style={{ color: P.muted, fontSize: 13, fontWeight: '700' }}>No transactions yet</Text>
+              <Text style={{ color: P.muted, fontSize: 11, marginTop: 3 }}>Tap Log to add your first one</Text>
+            </View>
+          ) : transactions.slice(0, 5).map((tx, i) => (
+            <View key={tx.id} style={[s.txnRow, i < Math.min(4, transactions.length - 1) && s.txnBorder]}>
+              <View style={[s.txnIcon, { backgroundColor: tx.type === 'income' ? '#DCF5E7' : '#F5F5F5' }]}>
+                <Text style={{ fontSize: 16 }}>{CAT_ICON[tx.category] || '📝'}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.txnLabel} numberOfLines={1}>{tx.label}</Text>
-                <Text style={s.txnSub}>{tx.cat} · {tx.date}</Text>
+                <Text style={s.txnLabel} numberOfLines={1}>{tx.note}</Text>
+                <Text style={s.txnSub}>{tx.category} · {fmtDate(tx.date, 'short')}</Text>
               </View>
-              <Text style={[s.txnAmt, { color: tx.amount > 0 ? P.greenDeep : P.dark }]}>
-                {tx.amount > 0 ? '+' : ''}{fmt(tx.amount)}
+              <Text style={[s.txnAmt, { color: tx.type === 'income' ? P.greenDeep : P.dark }]}>
+                {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
               </Text>
             </View>
           ))}
@@ -240,6 +277,12 @@ const s = StyleSheet.create({
   progressBg: { height: 5, backgroundColor: '#E8F0E8', borderRadius: 99, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 99 },
   questAlmost: { fontSize: 10, fontWeight: '800', marginTop: 3 },
+  emptyGoals: {
+    backgroundColor: '#fff', borderRadius: 18, padding: 20,
+    alignItems: 'center', marginBottom: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
+  },
+  emptyGoalsTxt: { color: P.muted, fontSize: 13, fontWeight: '700' },
   txnCard: {
     backgroundColor: '#fff', borderRadius: 20, overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
