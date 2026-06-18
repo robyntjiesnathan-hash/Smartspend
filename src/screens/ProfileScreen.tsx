@@ -290,12 +290,16 @@ export function ProfileScreen() {
               </TouchableOpacity>
             )}
 
-            {userProfile && !confirmSignOut && (
+            {/* Account action — always visible */}
+            {!userProfile ? (
+              <TouchableOpacity style={s.signInBtn} onPress={() => setScreen('auth')}>
+                <Text style={s.signInTxt}>Sign in / Create account</Text>
+              </TouchableOpacity>
+            ) : !confirmSignOut ? (
               <TouchableOpacity style={s.signOutBtn} onPress={() => setConfirmSignOut(true)}>
                 <Text style={s.signOutTxt}>Sign out</Text>
               </TouchableOpacity>
-            )}
-            {userProfile && confirmSignOut && (
+            ) : (
               <View style={s.signOutConfirm}>
                 <Text style={s.signOutConfirmTxt}>Are you sure you want to sign out?</Text>
                 <View style={s.signOutConfirmRow}>
@@ -386,6 +390,11 @@ const s = StyleSheet.create({
   nameSaveBtn: { backgroundColor: '#C6F135', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
   nameSaveTxt: { color: '#145229', fontSize: 13, fontWeight: '900' },
   sub: { color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: '700', marginBottom: 12 },
+  signInBtn: {
+    backgroundColor: '#DCF5E7', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 8,
+    borderWidth: 1, borderColor: '#A7F3D0',
+  },
+  signInTxt: { color: '#065F46', fontSize: 14, fontWeight: '800' },
   signOutBtn: {
     backgroundColor: '#FEF2F2', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 8,
     borderWidth: 1, borderColor: '#FECACA',

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { P, THEMES, fmt, CAT_ICON, fmtDate } from '../data/constants';
 
@@ -9,6 +9,7 @@ export function TransactionsScreen() {
   const { transactions, deleteTransaction, go, theme } = useApp();
   const th = useMemo(() => THEMES.find(t => t.id === theme) || THEMES[0], [theme]);
   const [filter, setFilter] = useState<Filter>('all');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const { totalIncome, totalExpense, balance } = useMemo(() => {
     let inc = 0, exp = 0;
@@ -35,17 +36,6 @@ export function TransactionsScreen() {
     }
     return result;
   }, [transactions, filter]);
-
-  const confirmDelete = (id: string, note: string) => {
-    Alert.alert(
-      'Delete transaction',
-      `Remove "${note}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deleteTransaction(id) },
-      ]
-    );
-  };
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: P.bg }} showsVerticalScrollIndicator={false}>
@@ -79,7 +69,7 @@ export function TransactionsScreen() {
           <TouchableOpacity
             key={f}
             style={[s.filterBtn, filter === f && { backgroundColor: th.primary }]}
-            onPress={() => setFilter(f)}>
+            onPress={() => { setFilter(f); setConfirmDeleteId(null); }}>
             <Text style={[s.filterTxt, filter === f && { color: '#fff' }]}>
               {f === 'all' ? 'All' : f === 'income' ? '↑ Income' : '↓ Expenses'}
             </Text>
@@ -100,27 +90,46 @@ export function TransactionsScreen() {
         ) : groups.map(g => (
           <View key={g.label}>
             <Text style={s.groupLabel}>{g.label}</Text>
-            {g.items.map(tx => (
-              <View key={tx.id} style={s.txnCard}>
-                <View style={[s.txnIcon, { backgroundColor: tx.type === 'income' ? '#DCF5E7' : '#F5F5F5' }]}>
-                  <Text style={{ fontSize: 20 }}>{CAT_ICON[tx.category] || '📝'}</Text>
+            {g.items.map(tx => {
+              const confirming = confirmDeleteId === tx.id;
+              return (
+                <View key={tx.id} style={[s.txnCard, confirming && s.txnCardConfirm]}>
+                  <View style={[s.txnIcon, { backgroundColor: tx.type === 'income' ? '#DCF5E7' : '#F5F5F5' }]}>
+                    <Text style={{ fontSize: 20 }}>{CAT_ICON[tx.category] || '📝'}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.txnNote} numberOfLines={1}>{tx.note}</Text>
+                    <Text style={s.txnCat}>{tx.category}</Text>
+                  </View>
+                  {confirming ? (
+                    <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                      <Text style={s.confirmQ}>Remove?</Text>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <TouchableOpacity style={s.confirmNo} onPress={() => setConfirmDeleteId(null)}>
+                          <Text style={s.confirmNoTxt}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={s.confirmYes}
+                          onPress={() => { deleteTransaction(tx.id); setConfirmDeleteId(null); }}>
+                          <Text style={s.confirmYesTxt}>Delete</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                      <Text style={[s.txnAmt, { color: tx.type === 'income' ? P.greenDeep : P.dark }]}>
+                        {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
+                      </Text>
+                      <TouchableOpacity
+                        style={s.deleteBtn}
+                        onPress={() => setConfirmDeleteId(tx.id)}>
+                        <Text style={s.deleteTxt}>✕ Delete</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.txnNote} numberOfLines={1}>{tx.note}</Text>
-                  <Text style={s.txnCat}>{tx.category}</Text>
-                </View>
-                <View style={{ alignItems: 'flex-end', gap: 6 }}>
-                  <Text style={[s.txnAmt, { color: tx.type === 'income' ? P.greenDeep : P.dark }]}>
-                    {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
-                  </Text>
-                  <TouchableOpacity
-                    style={s.deleteBtn}
-                    onPress={() => confirmDelete(tx.id, tx.note)}>
-                    <Text style={s.deleteTxt}>✕ Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         ))}
       </View>
@@ -155,12 +164,22 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 12,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
+  txnCardConfirm: { borderWidth: 1.5, borderColor: '#FECACA', backgroundColor: '#FFF8F8' },
   txnIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   txnNote: { fontWeight: '800', fontSize: 13, color: P.dark, marginBottom: 2 },
   txnCat: { fontSize: 11, fontWeight: '600', color: P.muted },
   txnAmt: { fontSize: 14, fontWeight: '900' },
   deleteBtn: { backgroundColor: '#FFF0F0', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   deleteTxt: { color: P.coral, fontSize: 10, fontWeight: '800' },
+  confirmQ: { fontSize: 11, fontWeight: '800', color: '#EF4444' },
+  confirmNo: {
+    backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5,
+  },
+  confirmNoTxt: { fontSize: 11, fontWeight: '800', color: '#6B7280' },
+  confirmYes: {
+    backgroundColor: '#EF4444', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5,
+  },
+  confirmYesTxt: { fontSize: 11, fontWeight: '800', color: '#fff' },
   empty: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 20, fontWeight: '900', color: P.dark, marginBottom: 6 },
   emptySub: { fontSize: 13, color: P.muted, fontWeight: '600', marginBottom: 24 },

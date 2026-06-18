@@ -295,7 +295,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       };
       setUserProfile(profile);
       await saveUserProfile(profile);
-      await loadSupabaseData(data.user.id);
+      try {
+        await loadSupabaseData(data.user.id);
+      } catch {
+        // Data load failed — still navigate to app with local/empty state
+        setScreen('app');
+      }
     }
     return null;
   }, []);
@@ -317,6 +322,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       options: { data: { display_name: displayName } },
     });
     if (error) return error.message;
+    if (data.user && !data.session) {
+      // Supabase requires email confirmation — tell the caller
+      return 'CONFIRM_EMAIL';
+    }
     if (data.user) {
       const profile: UserProfile = { id: data.user.id, email: data.user.email ?? '', displayName };
       setUserProfile(profile);

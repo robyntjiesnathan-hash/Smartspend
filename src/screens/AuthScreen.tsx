@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, KeyboardAvoidingView,
-  Platform, ScrollView, Alert,
+  Platform, ScrollView,
 } from 'react-native';
 import { Sprout } from '../components/Sprout';
 import { useApp } from '../context/AppContext';
-import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 
 export function AuthScreen() {
   const { setScreen, setTab, setOnboardingStep, signInUser, signUpUser } = useApp();
@@ -15,6 +14,8 @@ export function AuthScreen() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [infoMsg, setInfoMsg] = useState('');
 
   const continueAsGuest = () => {
     setOnboardingStep(0);
@@ -22,40 +23,63 @@ export function AuthScreen() {
     setTab('home');
   };
 
+  const switchMode = (m: 'signin' | 'signup') => {
+    setMode(m);
+    setErrorMsg('');
+    setInfoMsg('');
+  };
+
   const handleSubmit = async () => {
+    setErrorMsg('');
+    setInfoMsg('');
+
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedName = name.trim();
 
     if (!trimmedEmail || !password) {
-      Alert.alert('Missing fields', 'Please enter your email and password.');
+      setErrorMsg('Please enter your email and password.');
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Password too short', 'Password must be at least 6 characters.');
-      return;
-    }
-
-    if (!isSupabaseConfigured) {
-      // Offline mode — just save the name locally and continue
-      if (trimmedName) await signUpUser(trimmedEmail, password, trimmedName).catch(() => {});
-      continueAsGuest();
+      setErrorMsg('Password must be at least 6 characters.');
       return;
     }
 
     setLoading(true);
     try {
       if (mode === 'signup') {
-        const err = await signUpUser(trimmedEmail, password, trimmedName || trimmedEmail.split('@')[0]);
-        if (err) { Alert.alert('Sign up failed', err); return; }
+        const result = await signUpUser(
+          trimmedEmail,
+          password,
+          trimmedName || trimmedEmail.split('@')[0],
+        );
+        if (result === 'CONFIRM_EMAIL') {
+          setInfoMsg('Account created! Check your email for a confirmation link, then sign in.');
+          switchMode('signin');
+          return;
+        }
+        if (result) {
+          setErrorMsg(result);
+          return;
+        }
         setScreen('app');
         setTab('home');
         setOnboardingStep(0);
       } else {
-        const err = await signInUser(trimmedEmail, password);
-        if (err) { Alert.alert('Sign in failed', err); return; }
+        const result = await signInUser(trimmedEmail, password);
+        if (result) {
+          if (result.toLowerCase().includes('confirm') || result.toLowerCase().includes('verified')) {
+            setErrorMsg('Please confirm your email first. Check your inbox for the confirmation link.');
+          } else {
+            setErrorMsg(result);
+          }
+          return;
+        }
         setScreen('app');
         setTab('home');
       }
+    } catch (e: any) {
+      setErrorMsg(e?.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -83,12 +107,12 @@ export function AuthScreen() {
           <View style={s.toggle}>
             <TouchableOpacity
               style={[s.toggleBtn, mode === 'signup' && s.toggleActive]}
-              onPress={() => setMode('signup')}>
+              onPress={() => switchMode('signup')}>
               <Text style={[s.toggleTxt, mode === 'signup' && s.toggleTxtActive]}>Sign Up</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[s.toggleBtn, mode === 'signin' && s.toggleActive]}
-              onPress={() => setMode('signin')}>
+              onPress={() => switchMode('signin')}>
               <Text style={[s.toggleTxt, mode === 'signin' && s.toggleTxtActive]}>Sign In</Text>
             </TouchableOpacity>
           </View>
@@ -138,6 +162,18 @@ export function AuthScreen() {
               />
             </View>
           </View>
+
+          {/* Inline error / info messages */}
+          {errorMsg ? (
+            <View style={s.errorBox}>
+              <Text style={s.errorTxt}>⚠ {errorMsg}</Text>
+            </View>
+          ) : null}
+          {infoMsg ? (
+            <View style={s.infoBox}>
+              <Text style={s.infoTxt}>✓ {infoMsg}</Text>
+            </View>
+          ) : null}
 
           <TouchableOpacity
             style={[s.cta, loading && { opacity: 0.7 }]}
@@ -192,6 +228,20 @@ const s = StyleSheet.create({
     letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 6,
   },
   input: { fontSize: 16, fontWeight: '700', color: '#fff' },
+
+  errorBox: {
+    backgroundColor: 'rgba(239,68,68,0.15)', borderRadius: 14,
+    paddingVertical: 12, paddingHorizontal: 16,
+    borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)',
+  },
+  errorTxt: { color: '#FCA5A5', fontSize: 13, fontWeight: '700', lineHeight: 18 },
+
+  infoBox: {
+    backgroundColor: 'rgba(198,241,53,0.15)', borderRadius: 14,
+    paddingVertical: 12, paddingHorizontal: 16,
+    borderWidth: 1, borderColor: 'rgba(198,241,53,0.3)',
+  },
+  infoTxt: { color: '#C6F135', fontSize: 13, fontWeight: '700', lineHeight: 18 },
 
   cta: {
     backgroundColor: '#C6F135', borderRadius: 18, paddingVertical: 18,
