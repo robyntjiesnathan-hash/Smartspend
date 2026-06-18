@@ -89,6 +89,15 @@ if (fs.existsSync(assetSrc)) {
   }
 }
 
+// Copy static web pages (privacy, support, etc.)
+const staticSrc = path.join(ROOT, 'web-static');
+if (fs.existsSync(staticSrc)) {
+  for (const f of fs.readdirSync(staticSrc)) {
+    fs.copyFileSync(path.join(staticSrc, f), path.join(DEPLOY, f));
+    console.log('Static page:', f);
+  }
+}
+
 // ── 5. Push to gh-pages ────────────────────────────────────────────────────
 const run = cmd => execSync(cmd, { stdio: 'inherit', cwd: ROOT });
 

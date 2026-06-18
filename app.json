@@ -70,7 +70,9 @@
     "extra": {
       "eas": {
         "projectId": "REPLACE_WITH_YOUR_EAS_PROJECT_ID"
-      }
+      },
+      "privacyPolicyUrl": "https://robyntjiesnathan-hash.github.io/Smartspend/privacy.html",
+      "supportUrl": "https://robyntjiesnathan-hash.github.io/Smartspend/support.html"
     }
   }
 }
