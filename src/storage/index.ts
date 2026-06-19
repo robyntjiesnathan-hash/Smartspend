@@ -15,6 +15,7 @@ export type SavedSettings = {
   xp: number;
   streak: number;
   hasOnboarded: boolean;
+  walkthroughDone: boolean;
 };
 
 export const getSettings = async (): Promise<Partial<SavedSettings>> => {

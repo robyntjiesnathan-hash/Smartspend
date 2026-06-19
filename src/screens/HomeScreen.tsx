@@ -8,11 +8,26 @@ import { useApp } from '../context/AppContext';
 import { QUESTS, TIPS, THEMES, P, getLvl, fmt, pct, CAT_ICON, fmtDate } from '../data/constants';
 
 export function HomeScreen() {
-  const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go, transactions, userProfile, savingsGoals } = useApp();
+  const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go, transactions, userProfile, savingsGoals, budgets } = useApp();
   const th = useMemo(() => THEMES.find(t => t.id === theme) || THEMES[0], [theme]);
   const { c, p: lvlPct, inn, inn2 } = useMemo(() => getLvl(xp), [xp]);
   const tip = TIPS[tipIdx % TIPS.length];
-  const health = 82;
+
+  const health = useMemo(() => {
+    const monthStr = new Date().toISOString().slice(0, 7);
+    const monthTxns = transactions.filter(t => t.date.startsWith(monthStr));
+    const logScore = monthTxns.length === 0 ? 0 : monthTxns.length < 4 ? 15 : monthTxns.length < 11 ? 28 : 40;
+    const streakScore = Math.min(streak * 2, 15);
+    const savingsScore = savingsGoals.length > 0 ? 20 : 0;
+    let budgetScore = 0;
+    if (budgets.length > 0) {
+      const spent: Record<string, number> = {};
+      monthTxns.filter(t => t.type === 'expense').forEach(t => { spent[t.category] = (spent[t.category] || 0) + t.amount; });
+      const over = budgets.filter(b => (spent[b.category] || 0) > b.limit).length;
+      budgetScore = Math.max(0, 25 - over * 8);
+    }
+    return Math.min(100, logScore + streakScore + savingsScore + budgetScore);
+  }, [transactions, streak, savingsGoals, budgets]);
 
   const greeting = useMemo(() => {
     const h = new Date().getHours();

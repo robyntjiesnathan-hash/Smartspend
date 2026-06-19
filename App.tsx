@@ -8,6 +8,7 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { PaywallScreen } from './src/screens/PaywallScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
+import { AppWalkthrough } from './src/components/AppWalkthrough';
 import { P } from './src/data/constants';
 
 function Confetti() {
@@ -108,6 +109,7 @@ function Root() {
         <LevelUpModal />
         <ChallengeModal />
         <Confetti />
+        <AppWalkthrough />
       </View>
     </SafeAreaView>
   );

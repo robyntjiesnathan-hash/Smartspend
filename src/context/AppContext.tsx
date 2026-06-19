@@ -82,28 +82,15 @@ type AppContextType = {
   budgets: Budget[];
   saveBudget: (category: string, limit: number) => void;
   deleteBudget: (category: string) => void;
+  // Walkthrough
+  walkthroughDone: boolean;
+  completeWalkthrough: () => void;
 };
 
 const PRO_TABS: AppTab[] = ['progress', 'weekly'];
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-function daysAgo(n: number): string {
-  const d = new Date(); d.setDate(d.getDate() - n);
-  return d.toISOString().split('T')[0];
-}
-
-const SEED_TXNS: Transaction[] = [
-  { id: 's1', type: 'income',  amount: 7125, category: 'Income',        note: 'Salary',             date: daysAgo(0) },
-  { id: 's2', type: 'expense', amount: 86,   category: 'Groceries',     note: 'Whole Foods Market', date: daysAgo(0) },
-  { id: 's3', type: 'expense', amount: 18,   category: 'Entertainment', note: 'Netflix',            date: daysAgo(1) },
-  { id: 's4', type: 'expense', amount: 65,   category: 'Transport',     note: 'Gas Station',        date: daysAgo(1) },
-  { id: 's5', type: 'income',  amount: 1125, category: 'Income',        note: 'Freelance',          date: daysAgo(2) },
-  { id: 's6', type: 'expense', amount: 280,  category: 'Health',        note: 'Health Insurance',   date: daysAgo(2) },
-  { id: 's7', type: 'expense', amount: 45,   category: 'Dining Out',    note: 'Restaurant',         date: daysAgo(3) },
-  { id: 's8', type: 'expense', amount: 120,  category: 'Groceries',     note: 'Trader Joes',        date: daysAgo(5) },
-  { id: 's9', type: 'expense', amount: 145,  category: 'Transport',     note: 'Monthly Transit',    date: daysAgo(5) },
-];
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [screen, setScreenRaw] = useState<AppScreen>('splash');
@@ -137,6 +124,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
   const [budgets, setBudgetsState] = useState<Budget[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [walkthroughDone, setWalkthroughDone] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const confettiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const addDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -163,6 +151,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (settings.xp !== undefined)      setXp(settings.xp);
       if (settings.streak !== undefined)  setStreak(settings.streak);
       if (settings.hasOnboarded)          setHasOnboarded(true);
+      if (settings.walkthroughDone)       setWalkthroughDone(true);
 
       if (goals.length > 0) setSavingsGoals(goals);
       if (storedBudgets.length > 0) setBudgetsState(storedBudgets);
@@ -172,13 +161,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (settings.hasOnboarded) setScreen('app');
       } else if (settings.hasOnboarded) {
         if (saved.length > 0) setTransactions(saved);
-        else { setTransactions(SEED_TXNS); setXp(720); setStreak(14); }
         setScreen('app');
       } else {
-        setTransactions(SEED_TXNS);
-        setXp(720);
-        setStreak(14);
-        // leave screen = 'splash' so onboarding always shows on first launch
+        // Fresh install — leave everything empty, show splash onboarding
       }
 
       setIsReady(true);
@@ -272,8 +257,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // ── Persist settings locally ───────────────────────────────────────────────
   useEffect(() => {
     if (!isReady) return;
-    saveSettings({ isPro, toggles, theme, acc, xp, streak, hasOnboarded }).catch(() => {});
-  }, [isPro, toggles, theme, acc, xp, streak, hasOnboarded, isReady]);
+    saveSettings({ isPro, toggles, theme, acc, xp, streak, hasOnboarded, walkthroughDone }).catch(() => {});
+  }, [isPro, toggles, theme, acc, xp, streak, hasOnboarded, walkthroughDone, isReady]);
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const signInUser = useCallback(async (email: string, password: string): Promise<string | null> => {
@@ -360,10 +345,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (sb) await sb.auth.signOut();
     setUserProfile(null);
     await saveUserProfile(null);
-    setTransactions(SEED_TXNS);
-    setXp(720);
-    setStreak(14);
+    setTransactions([]);
+    setXp(0);
+    setStreak(0);
     setSavingsGoals([]);
+    setBudgetsState([]);
     setHasOnboarded(false);
     setScreenRaw('splash');
     setOnboardingStep(0);
@@ -561,6 +547,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }));
   }, []);
 
+  const completeWalkthrough = useCallback(() => setWalkthroughDone(true), []);
+
   const activatePro = useCallback(() => {
     setIsPro(true);
     setScreen('app');
@@ -589,6 +577,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       userProfile, signInUser, signUpUser, signOutUser, updateDisplayName,
       savingsGoals, addSavingsGoal, deleteSavingsGoal, updateSavingsGoalAmount,
       budgets, saveBudget, deleteBudget,
+      walkthroughDone, completeWalkthrough,
     }}>
       {children}
     </AppContext.Provider>
