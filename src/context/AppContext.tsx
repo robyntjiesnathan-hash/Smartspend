@@ -1,16 +1,13 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
-import { INIT_CHALLENGES, getLvl } from '../data/constants';
-import { Transaction, SavingsGoal, UserProfile, Budget } from '../types';
-import { getTransactions, saveTransactions, getSettings, saveSettings, getSavingsGoals, saveSavingsGoals, getUserProfile, saveUserProfile, getBudgets, saveBudgets } from '../storage';
+import { getLvl } from '../data/constants';
+import { Transaction, SavingsGoal, UserProfile, Budget, Challenge, LibraryChallenge } from '../types';
+import { getTransactions, saveTransactions, getSettings, saveSettings, getSavingsGoals, saveSavingsGoals, getUserProfile, saveUserProfile, getBudgets, saveBudgets, getChallenges, saveChallenges } from '../storage';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 
 export type AppScreen = 'splash' | 'auth' | 'paywall' | 'app';
 export type AppTab = 'home' | 'budgets' | 'progress' | 'profile' | 'add' | 'weekly' | 'transactions' | 'savings';
 
-export type Challenge = {
-  title: string; desc: string; days: number; done: number;
-  xp: number; col: string; colL: string; colD: string;
-};
+export type { Challenge, LibraryChallenge };
 
 type AppContextType = {
   isReady: boolean;
@@ -60,7 +57,9 @@ type AppContextType = {
   profTab: 'rewards' | 'settings';
   setProfTab: (v: 'rewards' | 'settings') => void;
   challenges: Challenge[];
-  markChallenge: (idx: number) => void;
+  joinChallenge: (lib: LibraryChallenge) => void;
+  leaveChallenge: (id: string) => void;
+  markChallenge: (id: string) => void;
   toggles: boolean[];
   setToggles: (fn: (t: boolean[]) => boolean[]) => void;
   transactions: Transaction[];
@@ -118,7 +117,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [tipIdx, setTipIdx] = useState(0);
   const [rewardTab, setRewardTab] = useState<'themes' | 'accessories'>('themes');
   const [profTab, setProfTab] = useState<'rewards' | 'settings'>('rewards');
-  const [challenges, setChallenges] = useState<Challenge[]>(INIT_CHALLENGES);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [toggles, setToggles] = useState([true, true, true, true]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
@@ -143,7 +142,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       getSavingsGoals(),
       getUserProfile(),
       getBudgets(),
-    ]).then(([saved, settings, goals, profile, storedBudgets]) => {
+      getChallenges(),
+    ]).then(([saved, settings, goals, profile, storedBudgets, storedChallenges]) => {
       if (settings.isPro !== undefined)    setIsPro(settings.isPro);
       if (settings.toggles)               setToggles(settings.toggles);
       if (settings.theme)                 setTheme(settings.theme);
@@ -155,6 +155,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       if (goals.length > 0) setSavingsGoals(goals);
       if (storedBudgets.length > 0) setBudgetsState(storedBudgets);
+      if (storedChallenges.length > 0) setChallenges(storedChallenges);
 
       if (profile) {
         setUserProfile(profile);
@@ -350,6 +351,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setStreak(0);
     setSavingsGoals([]);
     setBudgetsState([]);
+    setChallenges([]);
     setHasOnboarded(false);
     setScreenRaw('splash');
     setOnboardingStep(0);
@@ -532,9 +534,25 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // ── Challenges ────────────────────────────────────────────────────────────
-  const markChallenge = useCallback((idx: number) => {
-    setChallenges(prev => prev.map((ch, i) => {
-      if (i !== idx) return ch;
+  useEffect(() => {
+    if (!isReady) return;
+    saveChallenges(challenges).catch(() => {});
+  }, [challenges, isReady]);
+
+  const joinChallenge = useCallback((lib: LibraryChallenge) => {
+    setChallenges(prev => {
+      if (prev.some(c => c.id === lib.id)) return prev;
+      return [...prev, { ...lib, done: 0 }];
+    });
+  }, []);
+
+  const leaveChallenge = useCallback((id: string) => {
+    setChallenges(prev => prev.filter(c => c.id !== id));
+  }, []);
+
+  const markChallenge = useCallback((id: string) => {
+    setChallenges(prev => prev.map(ch => {
+      if (ch.id !== id) return ch;
       const done = Math.min(ch.days, ch.done + 1);
       if (done === ch.days) {
         setChModal(ch);
@@ -571,7 +589,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       addCat, setAddCat, addDone, selBudget, setSelBudget,
       theme, setTheme, acc, setAcc, tipIdx, setTipIdx,
       rewardTab, setRewardTab, profTab, setProfTab,
-      challenges, markChallenge, toggles, setToggles,
+      challenges, joinChallenge, leaveChallenge, markChallenge, toggles, setToggles,
       transactions, deleteTransaction,
       doAdd, go,
       userProfile, signInUser, signUpUser, signOutUser, updateDisplayName,

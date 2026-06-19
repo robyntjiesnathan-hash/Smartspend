@@ -35,3 +35,18 @@ export type AppState = {
   transactions: Transaction[];
   budgets: Budget[];
 };
+
+export type LibraryChallenge = {
+  id: string;
+  emoji: string;
+  cat: string;
+  title: string;
+  desc: string;
+  days: number;
+  xp: number;
+  col: string;
+  colL: string;
+  colD: string;
+};
+
+export type Challenge = LibraryChallenge & { done: number };

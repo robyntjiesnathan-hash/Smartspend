@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Transaction, Budget, SavingsGoal, UserProfile } from '../types';
+import { Transaction, Budget, SavingsGoal, UserProfile, Challenge } from '../types';
 
 const TRANSACTIONS_KEY  = '@smartspend_transactions';
 const BUDGETS_KEY       = '@smartspend_budgets';
 const SETTINGS_KEY      = '@smartspend_settings';
 const SAVINGS_GOALS_KEY = '@smartspend_savings_goals';
 const USER_PROFILE_KEY  = '@smartspend_user_profile';
+const CHALLENGES_KEY    = '@smartspend_challenges';
 
 export type SavedSettings = {
   isPro: boolean;
@@ -85,4 +86,17 @@ export const saveUserProfile = async (profile: UserProfile | null): Promise<void
   } else {
     await AsyncStorage.setItem(USER_PROFILE_KEY, JSON.stringify(profile));
   }
+};
+
+export const getChallenges = async (): Promise<Challenge[]> => {
+  try {
+    const data = await AsyncStorage.getItem(CHALLENGES_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const saveChallenges = async (challenges: Challenge[]): Promise<void> => {
+  await AsyncStorage.setItem(CHALLENGES_KEY, JSON.stringify(challenges));
 };

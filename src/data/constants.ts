@@ -121,10 +121,25 @@ export const WEEKLY = [
   { day: 'Sun', income: 0,    expense: 0 },
 ];
 
-export const INIT_CHALLENGES = [
-  { title: '7-Day Awareness',     desc: 'Log every expense for 7 days', days: 7, done: 5, xp: 150, col: '#7B5CF5', colL: '#EDE9FF', colD: '#3D1FA3' },
-  { title: 'Save $500 This Week', desc: 'Put aside $500 before Sunday', days: 7, done: 3, xp: 200, col: '#3DBA6A', colL: '#DCF5E7', colD: '#1B6E3A' },
-  { title: 'No Takeout Week',     desc: 'Cook at home every day',       days: 7, done: 2, xp: 100, col: '#00C4A7', colL: '#DFFAF6', colD: '#005C4F' },
+import { LibraryChallenge } from '../types';
+
+export const CHALLENGE_LIBRARY: LibraryChallenge[] = [
+  // Habits — purple
+  { id: 'log7',     emoji: '📝', cat: 'Habits',    title: '7-Day Tracker',       desc: 'Log every expense for 7 days straight',            days: 7,  xp: 150, col: '#7B5CF5', colL: '#EDE9FF', colD: '#3D1FA3' },
+  { id: 'log14',    emoji: '🏅', cat: 'Habits',    title: '2-Week Habit',        desc: 'Track your spending for 14 consecutive days',       days: 14, xp: 300, col: '#7B5CF5', colL: '#EDE9FF', colD: '#3D1FA3' },
+  { id: 'log30',    emoji: '🏆', cat: 'Habits',    title: '30-Day Champion',     desc: 'Log expenses every single day for a full month',    days: 30, xp: 600, col: '#7B5CF5', colL: '#EDE9FF', colD: '#3D1FA3' },
+  // Budget — teal / red / green
+  { id: 'noeat',    emoji: '🍳', cat: 'Budget',    title: 'Cook at Home Week',   desc: 'Skip dining out and cook every meal for 7 days',    days: 7,  xp: 150, col: '#00C4A7', colL: '#DFFAF6', colD: '#005C4F' },
+  { id: 'noshop',   emoji: '🛍️', cat: 'Budget',    title: 'No Shopping Week',    desc: 'Avoid non-essential purchases for 7 days',           days: 7,  xp: 150, col: '#FF5C5C', colL: '#FFEDED', colD: '#8B1A1A' },
+  { id: 'budget7',  emoji: '🎯', cat: 'Budget',    title: 'Budget Discipline',   desc: 'Stay within budget in every category for 7 days',   days: 7,  xp: 200, col: '#3DBA6A', colL: '#DCF5E7', colD: '#1B6E3A' },
+  { id: 'coffee',   emoji: '☕', cat: 'Budget',    title: 'No Coffee Shop Week', desc: 'Make coffee at home — skip the café for 7 days',    days: 7,  xp: 100, col: '#E76F51', colL: '#FFF0ED', colD: '#7A3000' },
+  // Savings — yellow / green
+  { id: 'save100',  emoji: '💰', cat: 'Savings',   title: 'Save $100 Challenge', desc: 'Put aside $100 before the end of this week',        days: 7,  xp: 200, col: '#FFD84D', colL: '#FFF8E0', colD: '#7A5F00' },
+  { id: 'nospend3', emoji: '🛡️', cat: 'Savings',   title: 'No-Spend Days',       desc: 'Have 3 zero-expense days this week',                days: 7,  xp: 125, col: '#3DBA6A', colL: '#DCF5E7', colD: '#1B6E3A' },
+  { id: 'goal1',    emoji: '🌟', cat: 'Savings',   title: 'Set Your First Goal', desc: 'Create a savings goal and make your first deposit',  days: 3,  xp: 75,  col: '#FFD84D', colL: '#FFF8E0', colD: '#7A5F00' },
+  // Awareness — blue
+  { id: 'review3',  emoji: '📊', cat: 'Awareness', title: 'Weekly Reviewer',     desc: 'Open the weekly summary 3 times this week',         days: 3,  xp: 75,  col: '#0077B6', colL: '#EAF6FB', colD: '#003D5C' },
+  { id: 'budget3',  emoji: '📋', cat: 'Awareness', title: 'Budget Planner',      desc: 'Set budgets for at least 3 spending categories',     days: 3,  xp: 100, col: '#0077B6', colL: '#EAF6FB', colD: '#003D5C' },
 ];
 
 export const PRO_FEATURES = [
