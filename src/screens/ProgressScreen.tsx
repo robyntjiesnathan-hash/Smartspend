@@ -301,12 +301,12 @@ const s = StyleSheet.create({
   header: { padding: 24, paddingBottom: 0, alignItems: 'center' },
   headerSub: { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 4 },
   headerTitle: { color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: -0.8, marginBottom: 14 },
-  xpCard: { backgroundColor: '#C6F135', padding: 16, paddingHorizontal: 20 },
-  xpLvl: { color: P.limeDark, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2, textAlign: 'center' },
-  xpTotal: { color: P.dark, fontSize: 30, fontWeight: '900', lineHeight: 34, textAlign: 'center', marginBottom: 4 },
+  xpCard: { backgroundColor: '#C6F135', paddingVertical: 20, paddingHorizontal: 22 },
+  xpLvl: { color: P.limeDark, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 3, textAlign: 'center' },
+  xpTotal: { color: P.dark, fontSize: 34, fontWeight: '900', lineHeight: 38, textAlign: 'center', marginBottom: 4 },
   xpRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
   xpSub: { color: P.limeDark, fontSize: 11, fontWeight: '800' },
-  xpBg: { height: 10, backgroundColor: 'rgba(0,0,0,0.12)', borderRadius: 99, overflow: 'hidden', marginBottom: 5 },
+  xpBg: { height: 12, backgroundColor: 'rgba(0,0,0,0.12)', borderRadius: 99, overflow: 'hidden', marginBottom: 5 },
   xpFill: { height: '100%', backgroundColor: P.greenDeep, borderRadius: 99 },
   xpNext: { color: P.limeDark, fontSize: 11, fontWeight: '700', textAlign: 'right' },
 
@@ -390,7 +390,7 @@ const s = StyleSheet.create({
   hbRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
   hbLabel: { fontSize: 12, color: '#6B8F6B', fontWeight: '700' },
   hbScore: { fontSize: 12, fontWeight: '900' },
-  hbBg: { height: 5, backgroundColor: '#E8EDE8', borderRadius: 99, overflow: 'hidden' },
+  hbBg: { height: 8, backgroundColor: '#E8EDE8', borderRadius: 99, overflow: 'hidden' },
   hbFill: { height: '100%', borderRadius: 99 },
 
   // Achievements
@@ -399,7 +399,7 @@ const s = StyleSheet.create({
     width: '47%', backgroundColor: '#fff', borderRadius: 18, padding: 13, alignItems: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
-  achLocked: { opacity: 0.45 },
+  achLocked: { opacity: 0.55 },
   achTitle: { fontWeight: '900', fontSize: 11, color: P.dark, marginBottom: 2, textAlign: 'center' },
   achDesc: { color: '#6B8F6B', fontSize: 10, fontWeight: '600', lineHeight: 14, textAlign: 'center' },
 });

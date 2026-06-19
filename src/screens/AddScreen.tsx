@@ -126,7 +126,7 @@ export function AddScreen() {
           </View>
 
           <TouchableOpacity
-            style={[s.submitBtn, (!addAmt || !addLabel) && s.submitBtnDisabled]}
+            style={[s.submitBtn, { backgroundColor: th.primary }, (!addAmt || !addLabel) && s.submitBtnDisabled]}
             onPress={doAdd}
             activeOpacity={0.85}
             disabled={!addAmt || !addLabel}>
@@ -179,8 +179,8 @@ const s = StyleSheet.create({
   xpHint: { borderRadius: 18, padding: 14, paddingHorizontal: 18, marginBottom: 16 },
   xpHintTxt: { fontSize: 13, fontWeight: '800' },
   submitBtn: {
-    backgroundColor: '#111C11', borderRadius: 18, paddingVertical: 18, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.22, shadowRadius: 10, elevation: 6,
+    borderRadius: 18, paddingVertical: 18, alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.18, shadowRadius: 10, elevation: 6,
   },
   submitBtnDisabled: { opacity: 0.45 },
   submitTxt: { color: '#fff', fontSize: 16, fontWeight: '900' },
