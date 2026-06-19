@@ -6,9 +6,9 @@ import { Sprout } from '../components/Sprout';
 import { useApp } from '../context/AppContext';
 
 const FEATURES = [
-  { icon: '📊', title: 'Track every dollar', desc: 'Log expenses in seconds and see exactly where your money goes.' },
-  { icon: '🏆', title: 'Level up your habits', desc: 'Earn XP, hit streaks, and unlock rewards for smart spending.' },
-  { icon: '🔔', title: 'Stay on track daily', desc: 'Daily nudges keep your streak alive and your budget on point.' },
+  { icon: '📊', title: 'Track every dollar', desc: 'Log expenses in seconds and see exactly where your money goes.', bg: 'rgba(61,186,106,0.35)' },
+  { icon: '🏆', title: 'Level up your habits', desc: 'Earn XP, hit streaks, and unlock rewards for smart spending.', bg: 'rgba(198,241,53,0.22)' },
+  { icon: '🔔', title: 'Stay on track daily', desc: 'Daily nudges keep your streak alive and your budget on point.', bg: 'rgba(123,92,245,0.32)' },
 ];
 
 export function SplashScreen() {
@@ -30,6 +30,7 @@ export function SplashScreen() {
               <Sprout lvl={1} size={190} mood="happy" acc="hat" />
             </View>
             <Text style={s.tagline}>Grow Strong{'\n'}Money Habits</Text>
+            <Text style={s.taglineSub}>Track · Budget · Save · Level Up</Text>
           </View>
         )}
 
@@ -41,7 +42,7 @@ export function SplashScreen() {
             <View style={s.featureList}>
               {FEATURES.map(f => (
                 <View key={f.title} style={s.featureRow}>
-                  <View style={s.featureIcon}>
+                  <View style={[s.featureIcon, { backgroundColor: f.bg }]}>
                     <Text style={{ fontSize: 22 }}>{f.icon}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -129,9 +130,10 @@ const s = StyleSheet.create({
 
   // Step 0 — Brand
   welcome: { color: 'rgba(255,255,255,0.7)', fontSize: 15, fontWeight: '700', marginBottom: 2, textAlign: 'center' },
-  brand: { color: '#fff', fontSize: 44, fontWeight: '900', letterSpacing: -1.8, marginBottom: 20, textAlign: 'center' },
-  mascotWrap: { marginBottom: 20 },
-  tagline: { color: '#fff', fontSize: 30, fontWeight: '900', letterSpacing: -1, lineHeight: 36, textAlign: 'center' },
+  brand: { color: '#fff', fontSize: 46, fontWeight: '900', letterSpacing: -2, marginBottom: 22, textAlign: 'center' },
+  mascotWrap: { marginBottom: 18 },
+  tagline: { color: '#fff', fontSize: 32, fontWeight: '900', letterSpacing: -1, lineHeight: 38, textAlign: 'center' },
+  taglineSub: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '700', textAlign: 'center', marginTop: 10, letterSpacing: 1 },
 
   // Steps 1 & 2 — shared
   slideTitle: { color: '#fff', fontSize: 28, fontWeight: '900', letterSpacing: -0.8, textAlign: 'center', marginBottom: 8 },
@@ -141,13 +143,14 @@ const s = StyleSheet.create({
   featureList: { width: '100%', gap: 12 },
   featureRow: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 18, padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: 16,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
   },
   featureIcon: {
-    width: 48, height: 48, borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center',
+    width: 50, height: 50, borderRadius: 15,
+    alignItems: 'center', justifyContent: 'center',
   },
-  featTitle: { color: '#fff', fontSize: 15, fontWeight: '800', marginBottom: 3 },
+  featTitle: { color: '#fff', fontSize: 15, fontWeight: '900', marginBottom: 3 },
   featDesc: { color: 'rgba(255,255,255,0.72)', fontSize: 13, fontWeight: '600', lineHeight: 18 },
 
   // Step 2 — Plan cards
@@ -155,6 +158,7 @@ const s = StyleSheet.create({
   freeCard: {
     flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 22,
     padding: 16, alignItems: 'center',
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.22)',
   },
   proCard: {
     flex: 1, backgroundColor: '#145229', borderRadius: 22,
@@ -189,13 +193,13 @@ const s = StyleSheet.create({
 
   // Next button
   nextBtn: {
-    backgroundColor: '#111C11', borderRadius: 18, paddingVertical: 18,
+    backgroundColor: '#C6F135', borderRadius: 18, paddingVertical: 18,
     alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 8,
+    shadowColor: '#C6F135', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.45, shadowRadius: 12, elevation: 8,
   },
-  nextBtnTxt: { color: '#fff', fontSize: 17, fontWeight: '900' },
+  nextBtnTxt: { color: '#145229', fontSize: 17, fontWeight: '900' },
 
   // Skip link
   skipWrap: { alignItems: 'center', paddingVertical: 10 },
-  skipTxt: { color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
+  skipTxt: { color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
 });
