@@ -3,6 +3,7 @@ import { getLvl } from '../data/constants';
 import { Transaction, SavingsGoal, UserProfile, Budget, Challenge, LibraryChallenge } from '../types';
 import { getTransactions, saveTransactions, getSettings, saveSettings, getSavingsGoals, saveSavingsGoals, getUserProfile, saveUserProfile, getBudgets, saveBudgets, getChallenges, saveChallenges } from '../storage';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
+import { configurePurchases } from '../utils/purchases';
 
 export type AppScreen = 'splash' | 'auth' | 'paywall' | 'app';
 export type AppTab = 'home' | 'budgets' | 'progress' | 'profile' | 'add' | 'weekly' | 'transactions' | 'savings';
@@ -136,6 +137,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // ── Boot: restore local state + check Supabase session ────────────────────
   useEffect(() => {
+    configurePurchases();
     Promise.all([
       getTransactions(),
       getSettings(),
