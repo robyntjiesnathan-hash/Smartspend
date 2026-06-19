@@ -439,7 +439,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setConfetti(true);
       setMsg("Level up! You're becoming a financial pro! 🏆");
       if (confettiTimerRef.current) clearTimeout(confettiTimerRef.current);
-      confettiTimerRef.current = setTimeout(() => setConfetti(false), 2600);
+      confettiTimerRef.current = setTimeout(() => setConfetti(false), 4000);
     } else {
       setMsg('Every dollar tracked grows your money tree! 🌱');
     }
@@ -559,7 +559,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setXp(x => x + ch.xp);
         setConfetti(true);
         if (confettiTimerRef.current) clearTimeout(confettiTimerRef.current);
-        confettiTimerRef.current = setTimeout(() => setConfetti(false), 2800);
+        confettiTimerRef.current = setTimeout(() => setConfetti(false), 4000);
       }
       return { ...ch, done };
     }));

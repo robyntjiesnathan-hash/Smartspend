@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import {
-  View, Text, TouchableOpacity, Animated, StyleSheet,
-  StatusBar, SafeAreaView, Platform,
+  View, Text, TouchableOpacity, StyleSheet,
+  StatusBar, SafeAreaView,
 } from 'react-native';
 import { AppProvider, useApp } from './src/context/AppContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
@@ -9,41 +9,8 @@ import { SplashScreen } from './src/screens/SplashScreen';
 import { PaywallScreen } from './src/screens/PaywallScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { AppWalkthrough } from './src/components/AppWalkthrough';
+import { ConfettiEffect } from './src/components/ConfettiEffect';
 import { P } from './src/data/constants';
-
-function Confetti() {
-  const { confetti } = useApp();
-  const COLS = ['#C6F135', '#FFD84D', '#FF5C5C', '#7B5CF5', '#00C4A7', '#3DBA6A'];
-  if (!confetti) return null;
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {Array.from({ length: 24 }).map((_, i) => (
-        <FallingPiece key={i} col={COLS[i % COLS.length]} left={`${4 + (i * 4) % 92}%`} delay={i * 80} />
-      ))}
-    </View>
-  );
-}
-
-function FallingPiece({ col, left, delay }: { col: string; left: `${number}%`; delay: number }) {
-  const anim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    setTimeout(() => {
-      Animated.timing(anim, { toValue: 1, duration: 1800, useNativeDriver: true }).start();
-    }, delay);
-  }, []);
-  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [-20, 800] });
-  const opacity = anim.interpolate({ inputRange: [0, 0.8, 1], outputRange: [1, 1, 0] });
-  const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '600deg'] });
-  return (
-    <Animated.View style={{
-      position: 'absolute', left, top: 0,
-      width: 10, height: 10, borderRadius: 3,
-      backgroundColor: col,
-      transform: [{ translateY }, { rotate }],
-      opacity,
-    }} />
-  );
-}
 
 function LevelUpModal() {
   const { levelUp, setLevelUp } = useApp();
@@ -108,7 +75,7 @@ function Root() {
         <AppNavigator />
         <LevelUpModal />
         <ChallengeModal />
-        <Confetti />
+        <ConfettiEffect />
         <AppWalkthrough />
       </View>
     </SafeAreaView>
@@ -126,7 +93,7 @@ export default function App() {
 
 const modal = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject, zIndex: 888,
+    ...StyleSheet.absoluteFillObject, zIndex: 995,
     backgroundColor: 'rgba(0,0,0,0.72)',
     alignItems: 'center', justifyContent: 'center', padding: 24,
   },
