@@ -70,7 +70,7 @@ The app is suitable for all ages. It collects financial data entered by the user
 
 **Data encrypted in transit:** Yes
 
-**User can request deletion:** Yes (email privacy@smartspend.app)
+**User can request deletion:** Yes (email smartspendapp1@gmail.com)
 
 ---
 
