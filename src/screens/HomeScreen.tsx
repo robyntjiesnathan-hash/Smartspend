@@ -5,13 +5,42 @@ import {
 import { Sprout } from '../components/Sprout';
 import { Ring } from '../components/Ring';
 import { useApp } from '../context/AppContext';
-import { QUESTS, TIPS, THEMES, P, getLvl, fmt, pct, CAT_ICON, fmtDate } from '../data/constants';
+import { TIPS, THEMES, P, getLvl, fmt, pct, CAT_ICON, fmtDate } from '../data/constants';
 
 export function HomeScreen() {
   const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go, setAddType, transactions, userProfile, savingsGoals, budgets } = useApp();
   const th = useMemo(() => THEMES.find(t => t.id === theme) || THEMES[0], [theme]);
   const { c, p: lvlPct, inn, inn2 } = useMemo(() => getLvl(xp), [xp]);
-  const tip = TIPS[tipIdx % TIPS.length];
+  const personalizedTips = useMemo(() => {
+    const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+    const weekExpenses = transactions.filter(t => t.type === 'expense' && t.date >= weekAgo);
+    const weekTotal = weekExpenses.reduce((s, t) => s + t.amount, 0);
+    const byCat: Record<string, number> = {};
+    weekExpenses.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + t.amount; });
+    const topCat = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0];
+    const tips: { icon: string; text: string }[] = [];
+    if (streak >= 7) tips.push({ icon: '🔥', text: `${streak}-day streak! You're building a real habit — don't break it.` });
+    if (topCat && weekTotal > 0) tips.push({ icon: CAT_ICON[topCat[0]] || '📊', text: `${topCat[0]} is your top spend this week at $${Math.round(topCat[1])}. Any room to trim?` });
+    if (weekTotal > 0) tips.push({ icon: '💡', text: `You've spent $${Math.round(weekTotal)} in the last 7 days. Tap Weekly for the full picture.` });
+    if (budgets.length === 0 && transactions.length >= 3) tips.push({ icon: '🎯', text: 'You have transactions but no budget set. Lock in a limit — takes 30 seconds.' });
+    if (savingsGoals.length === 0) tips.push({ icon: '✈️', text: 'Start a savings goal and watch the progress ring fill up every time you add funds.' });
+    if (transactions.length === 0) tips.push({ icon: '📝', text: 'Log your first expense today to start building your financial picture.' });
+    return tips.length > 0 ? tips : TIPS;
+  }, [transactions, streak, budgets, savingsGoals]);
+
+  const tip = personalizedTips[tipIdx % personalizedTips.length];
+
+  const noSpendInfo = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const monthStr = today.slice(0, 7);
+    const isNoSpendToday = !transactions.some(t => t.type === 'expense' && t.date === today);
+    const expenseDays = new Set(
+      transactions.filter(t => t.type === 'expense' && t.date.startsWith(monthStr)).map(t => t.date),
+    );
+    const daysElapsed = new Date().getDate();
+    const noSpendCount = Math.max(0, daysElapsed - expenseDays.size);
+    return { isNoSpendToday, noSpendCount, daysElapsed };
+  }, [transactions]);
 
   const health = useMemo(() => {
     const monthStr = new Date().toISOString().slice(0, 7);
@@ -124,6 +153,24 @@ export function HomeScreen() {
         <View style={{ flex: 1 }}>
           <Text style={[s.sproutLabel, { color: P.limeDark }]}>Sprout says</Text>
           <Text style={[s.sproutMsg, { color: P.dark }]}>{msg}</Text>
+        </View>
+      </View>
+
+      {/* No-Spend Day tracker */}
+      <View style={[s.noSpendCard, noSpendInfo.isNoSpendToday && s.noSpendCardActive]}>
+        <Text style={{ fontSize: 22 }}>{noSpendInfo.isNoSpendToday ? '🛡️' : '💸'}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={s.noSpendTitle}>
+            {noSpendInfo.isNoSpendToday ? 'No-Spend Day in progress!' : 'You spent money today'}
+          </Text>
+          <Text style={s.noSpendSub}>
+            {noSpendInfo.noSpendCount} no-spend day{noSpendInfo.noSpendCount !== 1 ? 's' : ''} this month
+          </Text>
+        </View>
+        <View style={[s.noSpendBadge, noSpendInfo.isNoSpendToday && s.noSpendBadgeActive]}>
+          <Text style={[s.noSpendBadgeTxt, noSpendInfo.isNoSpendToday && { color: P.greenDeep }]}>
+            {noSpendInfo.noSpendCount}/{noSpendInfo.daysElapsed}d
+          </Text>
         </View>
       </View>
 
@@ -264,6 +311,19 @@ const s = StyleSheet.create({
   sproutBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
   sproutLabel: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 },
   sproutMsg: { fontSize: 13, fontWeight: '700', lineHeight: 19 },
+  noSpendCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: '#fff', borderRadius: 18,
+    padding: 13, paddingHorizontal: 16,
+    marginHorizontal: 16, marginBottom: 8, borderWidth: 2, borderColor: 'transparent',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
+  },
+  noSpendCardActive: { backgroundColor: '#DCF5E7', borderColor: '#3DBA6A' },
+  noSpendTitle: { fontWeight: '900', fontSize: 13, color: '#111C11', marginBottom: 1 },
+  noSpendSub: { color: '#6B8F6B', fontSize: 11, fontWeight: '600' },
+  noSpendBadge: { backgroundColor: '#F0F4F0', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 },
+  noSpendBadgeActive: { backgroundColor: '#C6F135' },
+  noSpendBadgeTxt: { fontSize: 12, fontWeight: '900', color: '#6B8F6B' },
   tipBar: {
     backgroundColor: P.greenDark, flexDirection: 'row', alignItems: 'center',
     marginHorizontal: 16, marginBottom: 4, borderRadius: 16,

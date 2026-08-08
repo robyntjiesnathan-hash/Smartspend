@@ -455,6 +455,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setMsg("Level up! You're becoming a financial pro! 🏆");
       if (confettiTimerRef.current) clearTimeout(confettiTimerRef.current);
       confettiTimerRef.current = setTimeout(() => setConfetti(false), 4000);
+      // Show paywall at the peak of the level-5 success moment
+      if (!isPro && nowC.lvl >= 5 && wasL < 5) {
+        setTimeout(() => navToPaywall(), 3000);
+      }
     } else {
       setMsg('Every dollar tracked grows your money tree! 🌱');
     }
@@ -463,7 +467,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     addDoneTimerRef.current = setTimeout(() => {
       setAddDone(false); setAddAmt(''); setAddLabel(''); setMood('happy');
     }, 2400);
-  }, [xp, streak, addAmt, addLabel, addType, addCat, userProfile]);
+  }, [xp, streak, addAmt, addLabel, addType, addCat, userProfile, isPro, navToPaywall]);
 
   const deleteTransaction = useCallback((id: string) => {
     setTransactions(prev => {
@@ -513,10 +517,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [userProfile]);
 
   const updateSavingsGoalAmount = useCallback((id: string, addAmount: number) => {
+    let goalJustCompleted = false;
     setSavingsGoals(prev => {
       const next = prev.map(g => {
         if (g.id !== id) return g;
+        const wasComplete = g.savedAmount >= g.targetAmount;
         const updated = { ...g, savedAmount: Math.min(g.savedAmount + addAmount, g.targetAmount) };
+        if (!wasComplete && updated.savedAmount >= g.targetAmount) goalJustCompleted = true;
         if (isSupabaseConfigured && userProfile?.id && userProfile.id !== 'local') {
           const sb = getSupabase();
           sb?.from('savings_goals').update({ saved_amount: updated.savedAmount }).eq('id', id).then(() => {});
@@ -526,7 +533,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       saveSavingsGoals(next).catch(() => {});
       return next;
     });
-  }, [userProfile]);
+    if (goalJustCompleted && !isPro) {
+      setTimeout(() => navToPaywall(), 2500);
+    }
+  }, [userProfile, isPro, navToPaywall]);
 
   // ── Budgets ───────────────────────────────────────────────────────────────
   const saveBudget = useCallback((category: string, limit: number) => {
@@ -566,19 +576,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const markChallenge = useCallback((id: string) => {
-    setChallenges(prev => prev.map(ch => {
-      if (ch.id !== id) return ch;
-      const done = Math.min(ch.days, ch.done + 1);
-      if (done === ch.days) {
-        setChModal(ch);
-        setXp(x => x + ch.xp);
-        setConfetti(true);
-        if (confettiTimerRef.current) clearTimeout(confettiTimerRef.current);
-        confettiTimerRef.current = setTimeout(() => setConfetti(false), 4000);
-      }
-      return { ...ch, done };
-    }));
-  }, []);
+    let firstEverCompletion = false;
+    setChallenges(prev => {
+      const hadNoCompletions = prev.every(ch => ch.done < ch.days);
+      return prev.map(ch => {
+        if (ch.id !== id) return ch;
+        const done = Math.min(ch.days, ch.done + 1);
+        if (done === ch.days) {
+          setChModal(ch);
+          setXp(x => x + ch.xp);
+          setConfetti(true);
+          if (confettiTimerRef.current) clearTimeout(confettiTimerRef.current);
+          confettiTimerRef.current = setTimeout(() => setConfetti(false), 4000);
+          if (hadNoCompletions) firstEverCompletion = true;
+        }
+        return { ...ch, done };
+      });
+    });
+    if (firstEverCompletion && !isPro) {
+      setTimeout(() => navToPaywall(), 3000);
+    }
+  }, [isPro, navToPaywall]);
 
   const completeWalkthrough = useCallback(() => setWalkthroughDone(true), []);
 
