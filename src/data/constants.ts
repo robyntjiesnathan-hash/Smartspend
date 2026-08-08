@@ -164,7 +164,24 @@ export const FREE_VS_PRO = [
 ];
 
 const _nf = new Intl.NumberFormat('en-US');
-export const fmt = (n: number) => '$' + _nf.format(Math.abs(n));
+export const fmt = (n: number, symbol: string = '$') => symbol + _nf.format(Math.abs(n));
+
+export type Currency = { code: string; symbol: string; name: string };
+
+export const CURRENCIES: Currency[] = [
+  { code: 'USD', symbol: '$',   name: 'US Dollar' },
+  { code: 'EUR', symbol: '€',   name: 'Euro' },
+  { code: 'GBP', symbol: '£',   name: 'British Pound' },
+  { code: 'ZAR', symbol: 'R',   name: 'South African Rand' },
+  { code: 'INR', symbol: '₹',   name: 'Indian Rupee' },
+  { code: 'JPY', symbol: '¥',   name: 'Japanese Yen' },
+  { code: 'CNY', symbol: '¥',   name: 'Chinese Yuan' },
+  { code: 'AUD', symbol: 'A$',  name: 'Australian Dollar' },
+  { code: 'CAD', symbol: 'C$',  name: 'Canadian Dollar' },
+  { code: 'NGN', symbol: '₦',   name: 'Nigerian Naira' },
+  { code: 'KES', symbol: 'KSh', name: 'Kenyan Shilling' },
+  { code: 'BRL', symbol: 'R$',  name: 'Brazilian Real' },
+];
 export const pct = (a: number, b: number) => Math.min(100, Math.round((a / b) * 100));
 
 export function getLvl(xp: number) {

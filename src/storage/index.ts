@@ -19,6 +19,7 @@ export type SavedSettings = {
   hasOnboarded: boolean;
   walkthroughDone: boolean;
   lastLogged?: string;
+  currency?: string;
 };
 
 export const getSettings = async (): Promise<Partial<SavedSettings>> => {

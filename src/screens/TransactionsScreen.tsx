@@ -6,7 +6,7 @@ import { P, THEMES, fmt, CAT_ICON, fmtDate } from '../data/constants';
 type Filter = 'all' | 'income' | 'expense';
 
 export function TransactionsScreen() {
-  const { transactions, deleteTransaction, go, theme } = useApp();
+  const { transactions, deleteTransaction, go, theme, currencySymbol } = useApp();
   const th = useMemo(() => THEMES.find(t => t.id === theme) || THEMES[0], [theme]);
   const [filter, setFilter] = useState<Filter>('all');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -48,16 +48,16 @@ export function TransactionsScreen() {
         <View style={s.summaryRow}>
           <View style={s.summaryBox}>
             <Text style={s.summaryLabel}>Income</Text>
-            <Text style={[s.summaryVal, { color: P.lime }]}>+{fmt(totalIncome)}</Text>
+            <Text style={[s.summaryVal, { color: P.lime }]}>+{fmt(totalIncome, currencySymbol)}</Text>
           </View>
           <View style={s.summaryBox}>
             <Text style={s.summaryLabel}>Expenses</Text>
-            <Text style={[s.summaryVal, { color: P.coral }]}>-{fmt(totalExpense)}</Text>
+            <Text style={[s.summaryVal, { color: P.coral }]}>-{fmt(totalExpense, currencySymbol)}</Text>
           </View>
           <View style={s.summaryBox}>
             <Text style={s.summaryLabel}>Net</Text>
             <Text style={[s.summaryVal, { color: balance >= 0 ? '#fff' : P.coral }]}>
-              {balance >= 0 ? '' : '-'}{fmt(Math.abs(balance))}
+              {balance >= 0 ? '' : '-'}{fmt(Math.abs(balance), currencySymbol)}
             </Text>
           </View>
         </View>
@@ -118,7 +118,7 @@ export function TransactionsScreen() {
                   ) : (
                     <View style={{ alignItems: 'flex-end', gap: 6 }}>
                       <Text style={[s.txnAmt, { color: tx.type === 'income' ? P.greenDeep : P.dark }]}>
-                        {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
+                        {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount, currencySymbol)}
                       </Text>
                       <TouchableOpacity
                         style={s.deleteBtn}

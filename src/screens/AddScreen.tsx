@@ -24,7 +24,7 @@ function formatAmt(raw: string): string {
 export function AddScreen() {
   const {
     addType, setAddType, addAmt, setAddAmt, addLabel, setAddLabel,
-    addCat, setAddCat, addDone, streak, theme, doAdd, go,
+    addCat, setAddCat, addDone, streak, theme, currencySymbol, doAdd, go,
   } = useApp();
   const th = THEMES.find(t => t.id === theme) || THEMES[0];
 
@@ -49,7 +49,7 @@ export function AddScreen() {
   if (addDone) {
     const catIcon = addType === 'income' ? '💰' : (CAT_ICON[addCat] || '📝');
     const sign = addType === 'income' ? '+' : '−';
-    const amtDisplay = addAmt ? `$${formatAmt(addAmt)}` : '';
+    const amtDisplay = addAmt ? `${currencySymbol}${formatAmt(addAmt)}` : '';
     return (
       <View style={[s.doneContainer, { backgroundColor: th.primary }]}>
         <Text style={{ fontSize: 64, marginBottom: 12 }}>✅</Text>
@@ -107,7 +107,7 @@ export function AddScreen() {
           <View style={s.field}>
             <Text style={s.fieldLabel}>AMOUNT</Text>
             <View style={s.amtRow}>
-              <Text style={s.amtPrefix}>$</Text>
+              <Text style={s.amtPrefix}>{currencySymbol}</Text>
               <TextInput
                 style={s.amtInput}
                 value={displayAmt}

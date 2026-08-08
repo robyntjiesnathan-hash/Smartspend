@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Sprout } from '../components/Sprout';
 import { useApp } from '../context/AppContext';
-import { THEMES, ACCESSORIES, P, getLvl } from '../data/constants';
+import { THEMES, ACCESSORIES, CURRENCIES, P, getLvl } from '../data/constants';
 import {
   requestNotifPermission,
   scheduleDailyReminder,
@@ -98,7 +98,7 @@ privacy@smartspend.app`,
 
 export function ProfileScreen() {
   const {
-    xp, streak, isPro, mood, acc, setAcc, theme, setTheme,
+    xp, streak, isPro, mood, acc, setAcc, theme, setTheme, currency, setCurrency,
     rewardTab, setRewardTab, profTab, setProfTab,
     toggles, setToggles, setScreen, userProfile, signOutUser, updateDisplayName,
   } = useApp();
@@ -270,7 +270,25 @@ export function ProfileScreen() {
           </>
         ) : (
           <>
-            <Text style={s.sectionLabel}>PREFERENCES</Text>
+            <Text style={s.sectionLabel}>CURRENCY</Text>
+            <Text style={s.currencyHint}>Choose the currency used to track your transactions, budgets, and goals.</Text>
+            <View style={s.currencyGrid}>
+              {CURRENCIES.map(c => (
+                <TouchableOpacity
+                  key={c.code}
+                  style={[s.currencyChip, currency === c.code && s.currencyChipActive]}
+                  onPress={() => setCurrency(c.code)}
+                  activeOpacity={0.8}>
+                  <Text style={[s.currencySymbol, currency === c.code && s.currencyTxtActive]}>{c.symbol}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.currencyCode, currency === c.code && s.currencyTxtActive]}>{c.code}</Text>
+                    <Text style={[s.currencyName, currency === c.code && s.currencyNameActive]} numberOfLines={1}>{c.name}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[s.sectionLabel, { marginTop: 6 }]}>PREFERENCES</Text>
             {[
               { l: 'Daily reminder',  s: 'Nudge to log at 8 PM',     i: '🔔' },
               { l: 'Weekly summary',  s: 'Report every Monday',       i: '📊' },
@@ -456,6 +474,19 @@ const s = StyleSheet.create({
   accName: { fontWeight: '900', fontSize: 12, color: '#111C11', marginBottom: 2 },
   accDesc: { color: '#6B8F6B', fontSize: 10, fontWeight: '700' },
   sectionLabel: { fontSize: 11, fontWeight: '800', color: '#6B8F6B', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 10 },
+  currencyHint: { fontSize: 12, color: '#6B8F6B', fontWeight: '600', marginTop: -4, marginBottom: 12, lineHeight: 17 },
+  currencyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  currencyChip: {
+    width: '47.5%', backgroundColor: '#fff', borderRadius: 16, padding: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 2, borderColor: 'transparent',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
+  },
+  currencyChipActive: { backgroundColor: '#1B6E3A', borderColor: '#1B6E3A' },
+  currencySymbol: { fontSize: 18, fontWeight: '900', color: '#111C11', minWidth: 28 },
+  currencyCode: { fontWeight: '900', fontSize: 13, color: '#111C11' },
+  currencyName: { color: '#6B8F6B', fontSize: 10, fontWeight: '700' },
+  currencyTxtActive: { color: '#fff' },
+  currencyNameActive: { color: 'rgba(255,255,255,0.7)' },
   settingRow: {
     backgroundColor: '#fff', borderRadius: 18, padding: 14, paddingHorizontal: 16, marginBottom: 10,
     flexDirection: 'row', alignItems: 'center', gap: 12,

@@ -6,7 +6,7 @@ import { P, fmt } from '../data/constants';
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function WeeklyScreen() {
-  const { go, transactions, streak, budgets } = useApp();
+  const { go, transactions, streak, budgets, currencySymbol } = useApp();
 
   const weekly = useMemo(() => {
     const today = new Date();
@@ -41,9 +41,9 @@ export function WeeklyScreen() {
     if (totInc > 0 && totExp > 0) {
       const saved = totInc - totExp;
       if (saved > 0) {
-        out.push({ icon: '✅', text: `You saved ${fmt(saved)} more than you spent this week!`, col: P.greenDeep, bg: '#DCF5E7' });
+        out.push({ icon: '✅', text: `You saved ${fmt(saved, currencySymbol)} more than you spent this week!`, col: P.greenDeep, bg: '#DCF5E7' });
       } else {
-        out.push({ icon: '⚠️', text: `Expenses exceeded income by ${fmt(Math.abs(saved))} this week.`, col: P.coralDark, bg: P.coralLight });
+        out.push({ icon: '⚠️', text: `Expenses exceeded income by ${fmt(Math.abs(saved), currencySymbol)} this week.`, col: P.coralDark, bg: P.coralLight });
       }
     }
 
@@ -60,11 +60,11 @@ export function WeeklyScreen() {
     if (underBudget.length > 0) {
       const b = underBudget[0];
       const remaining = b.limit - (spent[b.category] || 0);
-      out.push({ icon: '✅', text: `${fmt(remaining)} left in your ${b.category} budget — great restraint!`, col: P.greenDeep, bg: '#DCF5E7' });
+      out.push({ icon: '✅', text: `${fmt(remaining, currencySymbol)} left in your ${b.category} budget — great restraint!`, col: P.greenDeep, bg: '#DCF5E7' });
     }
 
     return out;
-  }, [transactions, streak, budgets, totInc, totExp]);
+  }, [transactions, streak, budgets, totInc, totExp, currencySymbol]);
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: P.bg }} showsVerticalScrollIndicator={false}>
@@ -77,11 +77,11 @@ export function WeeklyScreen() {
         <View style={s.summaryRow}>
           <View style={s.summaryBox}>
             <Text style={s.summaryLabel}>Total income</Text>
-            <Text style={[s.summaryVal, { color: P.lime }]}>+{fmt(totInc)}</Text>
+            <Text style={[s.summaryVal, { color: P.lime }]}>+{fmt(totInc, currencySymbol)}</Text>
           </View>
           <View style={s.summaryBox}>
             <Text style={s.summaryLabel}>Total spent</Text>
-            <Text style={[s.summaryVal, { color: P.coral }]}>-{fmt(totExp)}</Text>
+            <Text style={[s.summaryVal, { color: P.coral }]}>-{fmt(totExp, currencySymbol)}</Text>
           </View>
         </View>
       </View>

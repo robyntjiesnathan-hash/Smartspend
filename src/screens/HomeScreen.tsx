@@ -8,7 +8,7 @@ import { useApp } from '../context/AppContext';
 import { TIPS, THEMES, P, getLvl, fmt, pct, CAT_ICON, fmtDate } from '../data/constants';
 
 export function HomeScreen() {
-  const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go, setAddType, transactions, userProfile, savingsGoals, budgets } = useApp();
+  const { isPro, xp, streak, mood, msg, acc, theme, currencySymbol, setScreen, tipIdx, setTipIdx, go, setAddType, transactions, userProfile, savingsGoals, budgets } = useApp();
   const th = useMemo(() => THEMES.find(t => t.id === theme) || THEMES[0], [theme]);
   const { c, p: lvlPct, inn, inn2 } = useMemo(() => getLvl(xp), [xp]);
   const personalizedTips = useMemo(() => {
@@ -20,13 +20,13 @@ export function HomeScreen() {
     const topCat = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0];
     const tips: { icon: string; text: string }[] = [];
     if (streak >= 7) tips.push({ icon: '🔥', text: `${streak}-day streak! You're building a real habit — don't break it.` });
-    if (topCat && weekTotal > 0) tips.push({ icon: CAT_ICON[topCat[0]] || '📊', text: `${topCat[0]} is your top spend this week at $${Math.round(topCat[1])}. Any room to trim?` });
-    if (weekTotal > 0) tips.push({ icon: '💡', text: `You've spent $${Math.round(weekTotal)} in the last 7 days. Tap Weekly for the full picture.` });
+    if (topCat && weekTotal > 0) tips.push({ icon: CAT_ICON[topCat[0]] || '📊', text: `${topCat[0]} is your top spend this week at ${currencySymbol}${Math.round(topCat[1])}. Any room to trim?` });
+    if (weekTotal > 0) tips.push({ icon: '💡', text: `You've spent ${currencySymbol}${Math.round(weekTotal)} in the last 7 days. Tap Weekly for the full picture.` });
     if (budgets.length === 0 && transactions.length >= 3) tips.push({ icon: '🎯', text: 'You have transactions but no budget set. Lock in a limit — takes 30 seconds.' });
     if (savingsGoals.length === 0) tips.push({ icon: '✈️', text: 'Start a savings goal and watch the progress ring fill up every time you add funds.' });
     if (transactions.length === 0) tips.push({ icon: '📝', text: 'Log your first expense today to start building your financial picture.' });
     return tips.length > 0 ? tips : TIPS;
-  }, [transactions, streak, budgets, savingsGoals]);
+  }, [transactions, streak, budgets, savingsGoals, currencySymbol]);
 
   const tip = personalizedTips[tipIdx % personalizedTips.length];
 
@@ -67,7 +67,7 @@ export function HomeScreen() {
     () => transactions.reduce((sum, t) => t.type === 'income' ? sum + t.amount : sum - t.amount, 0),
     [transactions],
   );
-  const balanceFmt = (balance < 0 ? '-' : '') + fmt(Math.abs(balance));
+  const balanceFmt = (balance < 0 ? '-' : '') + fmt(Math.abs(balance), currencySymbol);
 
   const strip = useMemo(() => {
     const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -237,7 +237,7 @@ export function HomeScreen() {
                     <Text style={[s.badgeTxt, { color: q.colorDark }]}>{pc}%</Text>
                   </View>
                 </View>
-                <Text style={s.questAmt}>{fmt(q.savedAmount)} / {fmt(q.targetAmount)}</Text>
+                <Text style={s.questAmt}>{fmt(q.savedAmount, currencySymbol)} / {fmt(q.targetAmount, currencySymbol)}</Text>
                 <View style={s.progressBg}>
                   <View style={[s.progressFill, { width: `${pc}%`, backgroundColor: q.color }]} />
                 </View>
@@ -272,7 +272,7 @@ export function HomeScreen() {
                 <Text style={s.txnSub}>{tx.category} · {fmtDate(tx.date, 'short')}</Text>
               </View>
               <Text style={[s.txnAmt, { color: tx.type === 'income' ? P.greenDeep : P.dark }]}>
-                {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
+                {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount, currencySymbol)}
               </Text>
             </View>
           ))}

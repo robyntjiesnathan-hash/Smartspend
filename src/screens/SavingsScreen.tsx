@@ -20,7 +20,7 @@ const PRESETS = [
 ];
 
 function GoalCard({ goal, onAdd }: { goal: SavingsGoal; onAdd: (g: SavingsGoal) => void }) {
-  const { deleteSavingsGoal } = useApp();
+  const { deleteSavingsGoal, currencySymbol } = useApp();
   const pc = pct(goal.savedAmount, goal.targetAmount);
 
   return (
@@ -37,7 +37,7 @@ function GoalCard({ goal, onAdd }: { goal: SavingsGoal; onAdd: (g: SavingsGoal) 
             </TouchableOpacity>
           </View>
           <Text style={[s.goalAmt, { color: goal.colorDark }]}>
-            {fmt(goal.savedAmount)} <Text style={{ color: P.muted }}>/ {fmt(goal.targetAmount)}</Text>
+            {fmt(goal.savedAmount, currencySymbol)} <Text style={{ color: P.muted }}>/ {fmt(goal.targetAmount, currencySymbol)}</Text>
           </Text>
           <View style={s.progressBg}>
             <View style={[s.progressFill, { width: `${pc}%`, backgroundColor: goal.color }]} />
@@ -58,7 +58,7 @@ function GoalCard({ goal, onAdd }: { goal: SavingsGoal; onAdd: (g: SavingsGoal) 
 }
 
 function AddFundsModal({ goal, onClose }: { goal: SavingsGoal; onClose: () => void }) {
-  const { updateSavingsGoalAmount } = useApp();
+  const { updateSavingsGoalAmount, currencySymbol } = useApp();
   const [amt, setAmt] = useState('');
 
   const submit = () => {
@@ -76,12 +76,12 @@ function AddFundsModal({ goal, onClose }: { goal: SavingsGoal; onClose: () => vo
           <View style={m.sheet}>
             <Text style={m.emoji}>{goal.emoji}</Text>
             <Text style={m.title}>Add to {goal.title}</Text>
-            <Text style={m.sub}>Currently saved: {fmt(goal.savedAmount)}</Text>
+            <Text style={m.sub}>Currently saved: {fmt(goal.savedAmount, currencySymbol)}</Text>
             <TextInput
               style={m.input}
               value={amt}
               onChangeText={setAmt}
-              placeholder="$ 0.00"
+              placeholder={`${currencySymbol} 0.00`}
               placeholderTextColor="#C0D0C0"
               keyboardType="decimal-pad"
               autoFocus
@@ -103,7 +103,7 @@ function AddFundsModal({ goal, onClose }: { goal: SavingsGoal; onClose: () => vo
 }
 
 function NewGoalModal({ onClose }: { onClose: () => void }) {
-  const { addSavingsGoal } = useApp();
+  const { addSavingsGoal, currencySymbol } = useApp();
   const [title, setTitle] = useState('');
   const [target, setTarget] = useState('');
   const [preset, setPreset] = useState(PRESETS[7]);
@@ -158,7 +158,7 @@ function NewGoalModal({ onClose }: { onClose: () => void }) {
                 style={m.input}
                 value={target}
                 onChangeText={setTarget}
-                placeholder="$ 0.00"
+                placeholder={`${currencySymbol} 0.00`}
                 placeholderTextColor="#C0D0C0"
                 keyboardType="decimal-pad"
               />
@@ -182,7 +182,7 @@ function NewGoalModal({ onClose }: { onClose: () => void }) {
 }
 
 export function SavingsScreen() {
-  const { savingsGoals, go } = useApp();
+  const { savingsGoals, go, currencySymbol } = useApp();
   const [showNew, setShowNew] = useState(false);
   const [fundGoal, setFundGoal] = useState<SavingsGoal | null>(null);
 
@@ -207,11 +207,11 @@ export function SavingsScreen() {
         <View style={s.summary}>
           <View style={s.summaryItem}>
             <Text style={s.summaryLabel}>TOTAL SAVED</Text>
-            <Text style={s.summaryVal}>{fmt(total)}</Text>
+            <Text style={s.summaryVal}>{fmt(total, currencySymbol)}</Text>
           </View>
           <View style={s.summaryItem}>
             <Text style={s.summaryLabel}>TOTAL GOALS</Text>
-            <Text style={s.summaryVal}>{fmt(totalTarget)}</Text>
+            <Text style={s.summaryVal}>{fmt(totalTarget, currencySymbol)}</Text>
           </View>
           <View style={s.summaryItem}>
             <Text style={s.summaryLabel}>PROGRESS</Text>

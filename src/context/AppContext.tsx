@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
-import { getLvl } from '../data/constants';
+import { getLvl, CURRENCIES } from '../data/constants';
 import { Transaction, SavingsGoal, UserProfile, Budget, Challenge, LibraryChallenge } from '../types';
 import { getTransactions, saveTransactions, getSettings, saveSettings, getSavingsGoals, saveSavingsGoals, getUserProfile, saveUserProfile, getBudgets, saveBudgets, getChallenges, saveChallenges } from '../storage';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
@@ -51,6 +51,9 @@ type AppContextType = {
   setTheme: (v: string) => void;
   acc: string;
   setAcc: (v: string) => void;
+  currency: string;
+  setCurrency: (v: string) => void;
+  currencySymbol: string;
   tipIdx: number;
   setTipIdx: (fn: (i: number) => number) => void;
   rewardTab: 'themes' | 'accessories';
@@ -115,6 +118,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [selBudget, setSelBudget] = useState<string | null>(null);
   const [theme, setTheme] = useState('forest');
   const [acc, setAcc] = useState('hat');
+  const [currency, setCurrency] = useState('USD');
+  const currencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol || '$';
   const [tipIdx, setTipIdx] = useState(0);
   const [rewardTab, setRewardTab] = useState<'themes' | 'accessories'>('themes');
   const [profTab, setProfTab] = useState<'rewards' | 'settings'>('rewards');
@@ -151,6 +156,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (settings.toggles)               setToggles(settings.toggles);
       if (settings.theme)                 setTheme(settings.theme);
       if (settings.acc)                   setAcc(settings.acc);
+      if (settings.currency)              setCurrency(settings.currency);
       if (settings.xp !== undefined)      setXp(settings.xp);
       if (settings.hasOnboarded)          setHasOnboarded(true);
       if (settings.walkthroughDone)       setWalkthroughDone(true);
@@ -248,6 +254,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (p.is_pro !== undefined) setIsPro(p.is_pro);
       if (p.theme)               setTheme(p.theme);
       if (p.acc)                 setAcc(p.acc);
+      if (p.currency)            setCurrency(p.currency);
     }
 
     if (goalsRes.data?.length) {
@@ -271,8 +278,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // ── Persist settings locally ───────────────────────────────────────────────
   useEffect(() => {
     if (!isReady) return;
-    saveSettings({ isPro, toggles, theme, acc, xp, streak, hasOnboarded, walkthroughDone, lastLogged }).catch(() => {});
-  }, [isPro, toggles, theme, acc, xp, streak, hasOnboarded, walkthroughDone, lastLogged, isReady]);
+    saveSettings({ isPro, toggles, theme, acc, currency, xp, streak, hasOnboarded, walkthroughDone, lastLogged }).catch(() => {});
+  }, [isPro, toggles, theme, acc, currency, xp, streak, hasOnboarded, walkthroughDone, lastLogged, isReady]);
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const signInUser = useCallback(async (email: string, password: string): Promise<string | null> => {
@@ -620,7 +627,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       levelUp, setLevelUp, chModal, setChModal,
       addType, setAddType, addAmt, setAddAmt, addLabel, setAddLabel,
       addCat, setAddCat, addDone, selBudget, setSelBudget,
-      theme, setTheme, acc, setAcc, tipIdx, setTipIdx,
+      theme, setTheme, acc, setAcc, currency, setCurrency, currencySymbol, tipIdx, setTipIdx,
       rewardTab, setRewardTab, profTab, setProfTab,
       challenges, joinChallenge, leaveChallenge, markChallenge, toggles, setToggles,
       transactions, deleteTransaction,

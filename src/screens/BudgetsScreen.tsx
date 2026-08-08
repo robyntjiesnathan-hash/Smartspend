@@ -32,6 +32,7 @@ function BudgetModal({
   onSave: (cat: string, limit: number) => void;
   onClose: () => void;
 }) {
+  const { currencySymbol } = useApp();
   const [cat, setCat] = useState(budget?.category || '');
   const [limit, setLimit] = useState(budget ? String(budget.limit) : '');
   const isEdit = budget !== null;
@@ -74,7 +75,7 @@ function BudgetModal({
               style={m.input}
               value={limit}
               onChangeText={setLimit}
-              placeholder="$ 0.00"
+              placeholder={`${currencySymbol} 0.00`}
               placeholderTextColor="#C0D0C0"
               keyboardType="decimal-pad"
               autoFocus={isEdit}
@@ -99,7 +100,7 @@ function BudgetModal({
 }
 
 export function BudgetsScreen() {
-  const { theme, selBudget, setSelBudget, transactions, budgets, saveBudget, deleteBudget } = useApp();
+  const { theme, currencySymbol, selBudget, setSelBudget, transactions, budgets, saveBudget, deleteBudget } = useApp();
   const th = THEMES.find(t => t.id === theme) || THEMES[0];
   const [editBudget, setEditBudget] = useState<Budget | null | false>(false);
 
@@ -149,11 +150,11 @@ export function BudgetsScreen() {
               <View style={s.summaryRow}>
                 <View style={s.summaryBox}>
                   <Text style={s.summaryLabel}>Spent</Text>
-                  <Text style={[s.summaryVal, { color: P.coral }]}>{fmt(tot)}</Text>
+                  <Text style={[s.summaryVal, { color: P.coral }]}>{fmt(tot, currencySymbol)}</Text>
                 </View>
                 <View style={s.summaryBox}>
                   <Text style={s.summaryLabel}>Budget</Text>
-                  <Text style={[s.summaryVal, { color: P.lime }]}>{fmt(lim)}</Text>
+                  <Text style={[s.summaryVal, { color: P.lime }]}>{fmt(lim, currencySymbol)}</Text>
                 </View>
               </View>
             </>
@@ -205,7 +206,7 @@ export function BudgetsScreen() {
                         </View>
                       )}
                     </View>
-                    <Text style={s.catAmt}>{fmt(b.spent)} of {fmt(b.limit)}</Text>
+                    <Text style={s.catAmt}>{fmt(b.spent, currencySymbol)} of {fmt(b.limit, currencySymbol)}</Text>
                   </View>
                   <View style={s.cardRight}>
                     <Text style={[s.catPct, { color: over ? P.coral : b.col }]}>{pc}%</Text>
@@ -222,8 +223,8 @@ export function BudgetsScreen() {
                   <View style={[s.detail, { backgroundColor: over ? P.coralLight : '#DCF5E7' }]}>
                     <Text style={{ fontSize: 12, color: over ? P.coralDark : P.greenDeep, fontWeight: '700' }}>
                       {over
-                        ? `Over by ${fmt(b.spent - b.limit)}. Try reducing spend.`
-                        : `${fmt(b.limit - b.spent)} remaining — great pacing!`
+                        ? `Over by ${fmt(b.spent - b.limit, currencySymbol)}. Try reducing spend.`
+                        : `${fmt(b.limit - b.spent, currencySymbol)} remaining — great pacing!`
                       }
                     </Text>
                     <View style={s.detailActions}>
