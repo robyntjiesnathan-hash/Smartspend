@@ -207,7 +207,10 @@ export function BudgetsScreen() {
                     </View>
                     <Text style={s.catAmt}>{fmt(b.spent)} of {fmt(b.limit)}</Text>
                   </View>
-                  <Text style={[s.catPct, { color: over ? P.coral : b.col }]}>{pc}%</Text>
+                  <View style={s.cardRight}>
+                    <Text style={[s.catPct, { color: over ? P.coral : b.col }]}>{pc}%</Text>
+                    <Text style={[s.chevron, sel && s.chevronOpen]}>›</Text>
+                  </View>
                 </View>
                 <View style={s.progressBg}>
                   <View style={[s.progressFill, {
@@ -284,7 +287,10 @@ const s = StyleSheet.create({
   badge: { borderRadius: 99, paddingHorizontal: 9, paddingVertical: 3 },
   badgeTxt: { fontSize: 10, fontWeight: '800' },
   catAmt: { color: '#6B8F6B', fontSize: 11, fontWeight: '700' },
+  cardRight: { alignItems: 'flex-end', gap: 2 },
   catPct: { fontWeight: '900', fontSize: 16 },
+  chevron: { color: '#9CA3AF', fontSize: 18, fontWeight: '700', lineHeight: 20 },
+  chevronOpen: { transform: [{ rotate: '90deg' }] },
   progressBg: { height: 11, backgroundColor: '#EDF0ED', borderRadius: 99, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 99 },
   detail: { marginTop: 10, borderRadius: 12, padding: 10, paddingHorizontal: 12 },
