@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert,
   Platform, Modal, Linking, SafeAreaView, TextInput,
@@ -14,6 +14,7 @@ import {
   scheduleMascotTip,
   cancelNotif,
 } from '../utils/notifications';
+import { getNotifIds, saveNotifIds } from '../storage';
 
 const LEGAL: Record<'tos' | 'privacy', { title: string; body: string }> = {
   tos: {
@@ -103,6 +104,9 @@ export function ProfileScreen() {
   } = useApp();
   const [notifIds, setNotifIds] = useState<(string | null)[]>([null, null, null, null]);
   const [legalModal, setLegalModal] = useState<null | 'tos' | 'privacy'>(null);
+
+  useEffect(() => { getNotifIds().then(setNotifIds); }, []);
+  useEffect(() => { saveNotifIds(notifIds).catch(() => {}); }, [notifIds]);
   const [editName, setEditName] = useState(false);
   const [nameInput, setNameInput] = useState(userProfile?.displayName || '');
   const [confirmSignOut, setConfirmSignOut] = useState(false);

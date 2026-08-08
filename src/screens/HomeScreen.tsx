@@ -8,7 +8,7 @@ import { useApp } from '../context/AppContext';
 import { QUESTS, TIPS, THEMES, P, getLvl, fmt, pct, CAT_ICON, fmtDate } from '../data/constants';
 
 export function HomeScreen() {
-  const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go, transactions, userProfile, savingsGoals, budgets } = useApp();
+  const { isPro, xp, streak, mood, msg, acc, theme, setScreen, tipIdx, setTipIdx, go, setAddType, transactions, userProfile, savingsGoals, budgets } = useApp();
   const th = useMemo(() => THEMES.find(t => t.id === theme) || THEMES[0], [theme]);
   const { c, p: lvlPct, inn, inn2 } = useMemo(() => getLvl(xp), [xp]);
   const tip = TIPS[tipIdx % TIPS.length];
@@ -154,7 +154,7 @@ export function HomeScreen() {
                 if (q.a === 'rewards') { go('profile'); return; }
                 if (q.a === 'gopro') { setScreen('paywall'); return; }
                 if (q.a === 'goal') { go('savings'); return; }
-                if (q.a === 'income') { go('add'); return; }
+                if (q.a === 'income') { setAddType('income'); go('add'); return; }
                 go('add');
               }}>
               <Text style={{ fontSize: 24, marginBottom: 8 }}>{q.icon}</Text>

@@ -22,7 +22,11 @@ function getRC(): typeof import('react-native-purchases').default | null {
   }
 }
 
-function getAndroidKey(): string | null {
+function getApiKey(): string | null {
+  if (Platform.OS === 'ios') {
+    const k = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? '';
+    return k && k !== 'REPLACE_WITH_REVENUECAT_IOS_KEY' ? k : null;
+  }
   const k = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? '';
   return k && k !== 'REPLACE_WITH_REVENUECAT_ANDROID_KEY' ? k : null;
 }
@@ -30,14 +34,14 @@ function getAndroidKey(): string | null {
 // Call once during app startup (from AppContext init).
 export function configurePurchases(): void {
   const RC = getRC();
-  const apiKey = getAndroidKey();
+  const apiKey = getApiKey();
   if (!RC || !apiKey) return;
   RC.configure({ apiKey });
 }
 
 export async function activatePurchase(plan: PurchasePlan): Promise<PurchaseResult> {
   const RC = getRC();
-  const apiKey = getAndroidKey();
+  const apiKey = getApiKey();
   if (!RC || !apiKey) {
     return { ok: false, cancelled: false, message: 'In-app purchases are not configured yet.' };
   }
@@ -58,7 +62,7 @@ export async function activatePurchase(plan: PurchasePlan): Promise<PurchaseResu
 
 export async function restorePurchases(): Promise<PurchaseResult> {
   const RC = getRC();
-  const apiKey = getAndroidKey();
+  const apiKey = getApiKey();
   if (!RC || !apiKey) {
     return { ok: false, cancelled: false, message: 'In-app purchases are not configured yet.' };
   }

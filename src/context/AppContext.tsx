@@ -125,6 +125,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [budgets, setBudgetsState] = useState<Budget[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [walkthroughDone, setWalkthroughDone] = useState(false);
+  const [lastLogged, setLastLogged] = useState('');
   const [isReady, setIsReady] = useState(false);
   const confettiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const addDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -151,9 +152,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (settings.theme)                 setTheme(settings.theme);
       if (settings.acc)                   setAcc(settings.acc);
       if (settings.xp !== undefined)      setXp(settings.xp);
-      if (settings.streak !== undefined)  setStreak(settings.streak);
       if (settings.hasOnboarded)          setHasOnboarded(true);
       if (settings.walkthroughDone)       setWalkthroughDone(true);
+
+      const today = new Date().toISOString().split('T')[0];
+      const savedStreak = settings.streak ?? 0;
+      const savedLastLogged = settings.lastLogged ?? '';
+      if (savedLastLogged && savedStreak > 0) {
+        const daysDiff = (new Date(today).getTime() - new Date(savedLastLogged).getTime()) / 86400000;
+        setStreak(daysDiff > 1 ? 0 : savedStreak);
+      } else {
+        setStreak(savedStreak);
+      }
+      if (savedLastLogged) setLastLogged(savedLastLogged);
 
       if (goals.length > 0) setSavingsGoals(goals);
       if (storedBudgets.length > 0) setBudgetsState(storedBudgets);
@@ -260,8 +271,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // ── Persist settings locally ───────────────────────────────────────────────
   useEffect(() => {
     if (!isReady) return;
-    saveSettings({ isPro, toggles, theme, acc, xp, streak, hasOnboarded, walkthroughDone }).catch(() => {});
-  }, [isPro, toggles, theme, acc, xp, streak, hasOnboarded, walkthroughDone, isReady]);
+    saveSettings({ isPro, toggles, theme, acc, xp, streak, hasOnboarded, walkthroughDone, lastLogged }).catch(() => {});
+  }, [isPro, toggles, theme, acc, xp, streak, hasOnboarded, walkthroughDone, lastLogged, isReady]);
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const signInUser = useCallback(async (email: string, password: string): Promise<string | null> => {
@@ -425,8 +436,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const wasL = getLvl(prev_xp).c.lvl;
     const nowC = getLvl(next_xp).c;
     const newStreak = streak + 1;
+    const today = new Date().toISOString().split('T')[0];
     setXp(next_xp);
     setStreak(s => Math.min(s + 1, 999));
+    setLastLogged(today);
     setMood('excited');
 
     // Sync XP & streak to Supabase

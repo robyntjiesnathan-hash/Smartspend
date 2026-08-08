@@ -48,11 +48,11 @@ Start tracking right away — no sign-up required. All your data stays privately
 Sign up with your email to securely back up your data and access SmartSpend from any device. Your data is encrypted in transit and protected by row-level security.
 
 **CLEAN, FAST, DISTRACTION-FREE**
-No ads. No subscriptions. No third-party trackers. Just a clean, fast app that helps you spend smarter every day.
+No ads. No third-party trackers. Just a clean, fast app that helps you spend smarter every day.
 
 ---
 
-*SmartSpend is free to download and use. No hidden fees.*
+*SmartSpend is free to download. Core features are free forever. An optional Pro subscription unlocks advanced analytics and weekly insights.*
 
 ---
 

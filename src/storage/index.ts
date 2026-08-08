@@ -7,6 +7,7 @@ const SETTINGS_KEY      = '@smartspend_settings';
 const SAVINGS_GOALS_KEY = '@smartspend_savings_goals';
 const USER_PROFILE_KEY  = '@smartspend_user_profile';
 const CHALLENGES_KEY    = '@smartspend_challenges';
+const NOTIF_IDS_KEY     = '@smartspend_notif_ids';
 
 export type SavedSettings = {
   isPro: boolean;
@@ -17,6 +18,7 @@ export type SavedSettings = {
   streak: number;
   hasOnboarded: boolean;
   walkthroughDone: boolean;
+  lastLogged?: string;
 };
 
 export const getSettings = async (): Promise<Partial<SavedSettings>> => {
@@ -99,4 +101,17 @@ export const getChallenges = async (): Promise<Challenge[]> => {
 
 export const saveChallenges = async (challenges: Challenge[]): Promise<void> => {
   await AsyncStorage.setItem(CHALLENGES_KEY, JSON.stringify(challenges));
+};
+
+export const getNotifIds = async (): Promise<(string | null)[]> => {
+  try {
+    const data = await AsyncStorage.getItem(NOTIF_IDS_KEY);
+    return data ? JSON.parse(data) : [null, null, null, null];
+  } catch {
+    return [null, null, null, null];
+  }
+};
+
+export const saveNotifIds = async (ids: (string | null)[]): Promise<void> => {
+  await AsyncStorage.setItem(NOTIF_IDS_KEY, JSON.stringify(ids));
 };
